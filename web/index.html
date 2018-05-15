@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>NWS Watches and Warnings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div class="background"></div>
+    <div class="block">
+      <div class="title">NWS Warnings, 2018</div>
+    </div>
+    <div class="block">
+      <div class="mapContainer" id="mapContainer">
+        <svg class="map" id="map" width="20em" viewbox="0 0 960 600"></svg>
+      </div>
+      <div class="footer">
+        <div class="playbackControls">
+          <div class="playPause"></div>
+          <div class="rangeContainer">
+            <input type="range" class="rangeInput" id="slider" min="1" max="1000" value="1">
+          </div>
+        </div>
+        <div>
+          <span class="timeDisplay" id="time"></span>
+          <span class="hoverText" id="hoverText"></span>
+        </div>
+      </div>
+    </div>
+    <div class="block legend">
+      <div class="legendItem"><div class="legendSquare SV"></div> severe thunderstorm</div>
+    </div>
+    <div class="block">
+      <div>
+        <p> This is a simple little animation that shows all of the watches and
+          warnings that have been issued by the National Weather Service this
+          year.
+        </p>
+      </div>
+    </div>
+
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/topojson.v2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>

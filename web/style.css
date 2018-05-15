@@ -1,0 +1,340 @@
+html {
+  background-color: #fafafa;
+  font-family: sans-serif;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  box-sizing: border-box;
+  margin: 1em auto;
+  max-width: 860px;
+  padding: 0;
+  color: #111;
+}
+
+p {
+  font-size: 0.9em;
+  margin: 1em;
+}
+
+.block {
+  background-color: #fff;
+  border: 1px solid #eaeaea;
+  margin: 1em 0;
+  position: relative;
+}
+
+.mapContainer {
+  left: 0;
+  margin: 0;
+  position: relative;
+  top: 0;
+}
+
+.map {
+  display: block;
+  margin: 0 auto;
+}
+
+.counties {
+  fill: #ccc;
+  stroke: none;
+}
+
+.county-borders {
+  fill: none;
+  pointer-events: none;
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 0.5px;
+}
+
+.title {
+  display: inline-block;
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.25em 0.5em;
+}
+
+.footer {
+  min-height: 2em;
+  width: 100%;
+}
+
+.buttonBar {
+  display: inline-block;
+  margin-left: 1em;
+}
+
+.timeDisplay {
+  margin-left: 1em;
+  display: inline-block;
+  font-size: 0.9em;
+  font-weight: bold;
+  min-width: 160px;
+}
+
+.rangeInput {
+  width: calc(100% - 60px);
+}
+
+.playPause {
+  background: transparent url('playpause.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
+}
+
+.playPause:focus {
+  border-color: #ccccea;
+  outline: 0;
+}
+
+.button {
+  border: 1px solid #eaeaea;
+  border-radius: 4px 4px 4px 4px;
+  margin: 8px 0 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.button::after {
+  content: attr(title);
+  display: block;
+  font-weight: bold;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.button:focus {
+  border-color: #ccccea;
+  outline: 0;
+  z-index: 2;
+}
+
+.leftButton {
+  border-radius: 4px 0 0 4px;
+}
+
+.middleButton {
+  border-radius: 0;
+  left: -1px;
+}
+
+
+.rightButton {
+  border-radius: 0 4px 4px 0;
+  left: -1px;
+}
+
+.pressedButton {
+  background-color: #ccc;
+  border-color: #ddd;
+  font-weight: bold;
+}
+
+.background {
+  -ms-interpolation-mode: nearest-neighbor;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -o-crisp-edges;
+  image-rendering: pixelated;
+
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-image: url('background.png');
+
+  z-index: -1;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width:100%;
+  height:100%;
+  background-position:center;
+}
+
+.playbackControls {
+  box-sizing:border-box;
+  padding: 0 1em;
+  position:relative;
+  width:100%;
+}
+
+.legendItem {
+  display: inline-block;
+  padding: 0 1em;
+}
+
+.legend {
+  font-size: 0.8em;
+  padding: 1em 0;
+}
+
+.legendSquare {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  vertical-align: bottom;
+}
+
+.rangeContainer {
+  display: inline-block;
+  margin-left: 16px;
+  position: relative;
+  vertical-align: middle;
+  width:calc(100% - 64px)
+}
+
+.SV { fill: orange; background-color: orange;} /* Severe Thunderstorm (SV) */
+.TO { fill: red; background-color: red;} /* Tornado (TO) */
+.MA { fill: palevioletred; background-color: palevioletred; } /* Marine (MA) */
+.AF { fill: red; background-color: red; } /* Volcanic Ashfall (AF) */
+.AS { fill: gray; background-color: gray; } /* Air Stagnation (AS) */
+.AV { fill: blue; background-color: blue; } /* Avalanche (AV) */
+.BH { fill: thistle; background-color: thistle; } /* Beach Hazard (BH) */
+.BS { fill: cyan; background-color: cyan; } /* Blowing Snow (BS) */
+.BZ { fill: orangered; background-color: orangered; } /* Blizzard (BZ) */
+.CF { fill: forestgreen; background-color: forestgreen; } /* Coastal Flood (CF) */
+.DU { fill: darkkhaki; background-color: darkkhaki; } /* Blowing Dust (DU) */
+.DS { fill: bisque; background-color: bisque; } /* Dust Storm (DS) */
+.EC { fill: blue; background-color: blue; } /* Extreme Cold (EC) */
+.EH { fill: mediumvioletred; background-color: mediumvioletred;} /* Excessive Heat (EH) */
+.EW { fill: deeppink; background-color: deeppink;} /* Extreme Wind (EW) */
+.FA { fill: seagreen; background-color: seagreen; } /* Areal Flood (FA) */
+.FF { fill: limegreen; background-color: limegreen; } /* Flash Flood (FF) */
+.FL { fill: green; background-color: green; } /* Flood (FL) */
+.FR { fill: green; background-color: green; } /* Frost (FR) */
+.FZ { fill: cyan; background-color: cyan; } /* Freeze (FZ) */
+.FG { fill: slategray; background-color: slategray; } /* Dense Fog (FG) */
+.FW { fill: deeppink; background-color: deeppink; } /* Red Flag (FW) */
+.GL { fill: #dda0dd; background-color: #dda0dd; } /* Gale (GL) */
+.HF { fill: #cd5c5c; background-color: #cd5c5c; } /* Hurricane Force Wind (HF) */
+.HI { fill: #cd5c5c; background-color: #cd5c5c; } /* Inland Hurricane Wind (HI) */
+.HS { fill: blue; background-color: blue; } /* Heavy Snow (HS) */
+.HP { fill: lightsteelblue; background-color: lightsteelblue; } /* Heavy Sleet (HP) */
+.HT { fill: coral; background-color: coral; } /* Heat (HT) */
+.HU { fill: #dc143c; background-color: #dc143c; } /* Hurricane (HU) */
+.HW { fill: goldenrod; background-color: goldenrod; } /* High Wind (HW) */
+.HY { fill: springgreen; background-color: springgreen; } /* Hydrologic (HY) */
+.HZ { fill: blue; background-color: blue; } /* Hard Freeze (HZ) */
+.IS { fill: darkmagenta; background-color: darkmagenta; } /* Ice Storm (IS) */
+.IP { fill: cyan; background-color: cyan; } /* Sleet (IP) */
+.LB { fill: blue; background-color: blue; } /* Lake Effect Snow and Blowing Snow (LB) */
+.LE { fill: blue; background-color: blue; } /* Lake Effect Snow (LE) */
+.LO { fill: khaki; background-color: khaki; } /* Low Water (LO) */
+.LS { fill: green; background-color: green; } /* Lakeshore Flood (LS) */
+.LW { fill: thistle; background-color: thistle; } /* Lake Wind (LW) */
+.RB { fill: thistle; background-color: thistle; } /* Small Craft for Rough Bar (RB) */
+.RH { fill: red; background-color: red; } /* Radiological Hazard (RH) */
+.SB { fill: blue; background-color: blue; } /* Snow and Blowing Snow (SB) */
+.SC { fill: thistle; background-color: thistle; } /* Small Craft (SC) */
+.SE { fill: thistle; background-color: thistle; } /* Hazardous Seas (SE) */
+.SI { fill: thistle; background-color: thistle; } /* Small Craft for Winds (SI) */
+.SM { fill: khaki; background-color: khaki; } /* Dense Smoke (SM) */
+.SN { fill: blue; background-color: blue; } /* Snow (SN) */
+.SQ { fill: blue; background-color: blue; } /* Snow Squall (SQ) */
+.SR { fill: #9400d3; background-color: #9400d3; } /* Storm (SR) */
+.SU { fill: forestgreen; background-color: forestgreen; } /* High Surf (SU) */
+.TI { fill: #b22222; background-color: #b22222; } /* Inland Tropical Storm Wind (TI) */
+.TR { fill: #b22222; background-color: #b22222; } /* Tropical Storm (TR) */
+.TS { fill: red; background-color: red; } /* Tsunami (TS) */
+.TY { fill: #dc143c; background-color: #dc143c; } /* Typhoon (TY) */
+.UP { fill: blue; background-color: blue; } /* Ice Accretion (UP) */
+.VO { fill: red; background-color: red; } /* Volcano (VO) */
+.WC { fill: lightsteelblue; background-color: lightsteelblue; } /* Wind Chill (WC) */
+.WI { fill: tan; background-color: tan; } /* Wind (WI) */
+.WS { fill: hotpink; background-color: hotpink; } /* Winter Storm (WS) */
+.WW { fill: #7b68ee; background-color: #7b68ee; } /* Winter Weather (WW) */
+.ZF { fill: cyan; background-color: cyan; } /* Freezing Fog (ZF) */
+.ZR { fill: cyan; background-color: cyan; } /* Freezing Rain (ZR) */
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  margin: 9.9px 0;
+}
+input[type=range]:focus {
+  outline: none;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4.2px;
+  cursor: pointer;
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+  background: #cccccc;
+  border-radius: 1.3px;
+  border: 0.2px solid #010101;
+}
+input[type=range]::-webkit-slider-thumb {
+  box-shadow: 1px 1px 0px #666666, 0px 0px 1px #737373;
+  border: 1px solid #777777;
+  height: 24px;
+  width: 9px;
+  border-radius: 2px;
+  background: #cccccc;
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -10.1px;
+}
+input[type=range]:focus::-webkit-slider-runnable-track {
+  background: #d9d9d9;
+}
+input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 4.2px;
+  cursor: pointer;
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+  background: #cccccc;
+  border-radius: 1.3px;
+  border: 0.2px solid #010101;
+}
+input[type=range]::-moz-range-thumb {
+  box-shadow: 1px 1px 0px #666666, 0px 0px 1px #737373;
+  border: 1px solid #777777;
+  height: 24px;
+  width: 7px;
+  border-radius: 2px;
+  background: #cccccc;
+  cursor: pointer;
+}
+input[type=range]::-ms-track {
+  width: 100%;
+  height: 4.2px;
+  cursor: pointer;
+  background: transparent;
+  border-color: transparent;
+  color: transparent;
+}
+input[type=range]::-ms-fill-lower {
+  background: #bfbfbf;
+  border: 0.2px solid #010101;
+  border-radius: 2.6px;
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+input[type=range]::-ms-fill-upper {
+  background: #cccccc;
+  border: 0.2px solid #010101;
+  border-radius: 2.6px;
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+input[type=range]::-ms-thumb {
+  box-shadow: 1px 1px 0px #666666, 0px 0px 1px #737373;
+  border: 1px solid #777777;
+  height: 24px;
+  width: 9px;
+  border-radius: 2px;
+  background: #cccccc;
+  cursor: pointer;
+}
+input[type=range]:focus::-ms-fill-lower {
+  background: #cccccc;
+}
+input[type=range]:focus::-ms-fill-upper {
+  background: #d9d9d9;
+}
