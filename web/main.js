@@ -6,6 +6,7 @@ const data = {};
 let loadedIndex = 0;
 let selectedCounty = '';
 let previous = [];
+let paused = false;
 const min = moment.utc('20180101', 'YYYYMMDD').valueOf();
 const max = moment.utc('20180501', 'YYYYMMDD').valueOf();
 const positionSteps = 1000;
@@ -30,13 +31,6 @@ function timeToPosition() {
   return positionSteps - Math.ceil(((max - currentTime) / (max - min)) * positionSteps);
 }
 
-function handleSliderChange() {
-  const newValue = document.getElementById('slider').value;
-  const newTime =
-    moment(min + (Math.floor((max - min) / positionSteps) * newValue));
-  currentTime = newTime.subtract(newTime.minutes() % 15, 'm');
-}
-
 function refreshHoverText() {
   const el = document.getElementById('hoverText');
   if (!el) {
@@ -52,10 +46,7 @@ function refreshHoverText() {
   el.textContent = classes || 'No classes.';
 }
 
-function handleChange() {
-  currentTime = currentTime.add(15, 'm');
-  document.getElementById('time').textContent =
-    currentTime.format('YYYY-MM-DD HH:mm');
+function redraw() {
   const newValue = currentTime.format('YYYYMMDDHHmm');
 
   for (let i = 0; i < previous.length; i += 1) {
@@ -77,8 +68,27 @@ function handleChange() {
     }
   }
 
+  document.getElementById('time').textContent =
+    currentTime.format('YYYY-MM-DD HH:mm');
   document.getElementById('slider').value = timeToPosition();
   refreshHoverText();
+}
+
+function handleSliderChange() {
+  const newValue = document.getElementById('slider').value;
+  const newTime =
+    moment(min + (Math.floor((max - min) / positionSteps) * newValue));
+  currentTime = newTime.subtract(newTime.minutes() % 15, 'm');
+  redraw();
+}
+
+function handleChange() {
+  if (paused || currentTime.valueOf() >= max) {
+    window.setTimeout(handleChange, 25);
+    return;
+  }
+  currentTime = currentTime.add(15, 'm');
+  redraw();
   window.setTimeout(handleChange, 25);
 }
 
@@ -144,6 +154,10 @@ function sizeSvg() {
   svg.attr('width', `${width - 2}px`);
 }
 
+function handlePlayPauseClick() {
+  paused = !paused;
+}
+
 // TODO(jdhollen): move everything below here to an onload event.
 d3.json(
   'data/10m.json',
@@ -159,6 +173,7 @@ d3.json(
 
 document.getElementById('slider').addEventListener('change', handleSliderChange);
 document.getElementById('slider').addEventListener('input', handleSliderChange);
+document.getElementById('playPause').addEventListener('click', handlePlayPauseClick);
 
 window.addEventListener('resize', sizeSvg);
 sizeSvg();
