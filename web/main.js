@@ -150,6 +150,17 @@ function handleMouseOut(d) {
 }
 
 function drawBaseMap(us) {
+  const context = d3.select('canvas').node().getContext('2d');
+  const canvasPath = d3.geoPath().context(context);
+
+  context.beginPath();
+  context.imageSmoothingEnabled = false;
+  context.translate(0.5, 0.5);
+  context.strokeStyle = '#df4b26';
+  context.lineWidth = 0.5;
+  canvasPath(topojson.mesh(us));
+  context.stroke();
+
   const path = d3.geoPath();
   svg.append('g')
     .attr('class', 'counties')
