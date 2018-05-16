@@ -7,7 +7,7 @@ let countyNames = {};
 let alertNames = {};
 let loadedIndex = 0;
 let selectedCounty = '';
-let previous = [];
+let previous = {};
 let paused = false;
 let pausedBeforeInputStarted = false;
 let slideInProgress = false;
@@ -46,13 +46,8 @@ function refreshHoverText() {
     return;
   }
 
-  let countyId = selectedCounty;
-  if (selectedCounty[0] === '0') {
-    countyId = countyId.substring(1);
-  }
-
-  const stateName = countyNames[`${(countyId - (countyId % 1000))}`];
-  const fullName = `${countyNames[countyId]}, ${stateName}`;
+  const stateName = countyNames[`${selectedCounty.substring(0, 2)}000`];
+  const fullName = `${countyNames[selectedCounty]}, ${stateName}`;
 
   const classString =
     document.getElementById(`county${selectedCounty}`).getAttribute('class');
@@ -78,11 +73,13 @@ function refreshHoverText() {
 
 function redraw() {
   const newValue = currentTime.format('YYYYMMDDHHmm');
+  const newClasses = {};
+  const changes = {};
 
-  for (let i = 0; i < previous.length; i += 1) {
-    previous[i].setAttribute('class', '');
+  const previousKeys = Object.keys(previous);
+  for (let i = 0; i < previousKeys.length; i += 1) {
+    changes[previousKeys[i]] = '';
   }
-  previous = [];
 
   for (let i = 0; i < types.length; i += 1) {
     const type = types[i];
@@ -90,14 +87,26 @@ function redraw() {
       (data[type] && data[type][newValue]) ? data[type][newValue] : [];
 
     for (let j = 0; j < counties.length; j += 1) {
-      const el = countyElementLookup[counties[j]];
-      if (el) {
-        previous.push(el);
-        el.classList.add(type);
+      if (!newClasses[counties[j]]) {
+        newClasses[counties[j]] = type;
+      } else {
+        newClasses[counties[j]] = newClasses[counties[j]].concat(` ${type}`);
       }
     }
   }
 
+  const changeKeys = Object.keys(changes);
+  for (let i = 0; i < changeKeys.length; i += 1) {
+    const county = changeKeys[i];
+    if (previous[county] !== changes[county]) {
+      const el = countyElementLookup[county];
+      if (el) {
+        el.setAttribute('class', newClasses[county]);
+      }
+    }
+  }
+
+  previous = newClasses;
   document.getElementById('time').textContent =
     currentTime.format('YYYY-MM-DD HH:mm');
   document.getElementById('slider').value = timeToPosition();
