@@ -3,6 +3,8 @@
 
 const svg = d3.select('#map');
 const data = {};
+let countyNames = {};
+let alertNames = {};
 let loadedIndex = 0;
 let selectedCounty = '';
 let previous = [];
@@ -43,9 +45,34 @@ function refreshHoverText() {
     return;
   }
 
-  const classes = document.getElementById(`county${selectedCounty}`).getAttribute('class');
+  let countyId = selectedCounty;
+  if (selectedCounty[0] === '0') {
+    countyId = countyId.substring(1);
+  }
 
-  el.textContent = classes || 'No classes.';
+  const stateName = countyNames[`${(countyId - (countyId % 1000))}`];
+  const fullName = `${countyNames[countyId]}, ${stateName}`;
+
+  const classString =
+    document.getElementById(`county${selectedCounty}`).getAttribute('class');
+
+  let classes = [];
+  if (classString) {
+    classes = classString.split(' ');
+  }
+
+  let alerts = '';
+  for (let i = 0; i < classes.length; i += 1) {
+    const alert = alertNames[classes[i]];
+    if (alert) {
+      alerts = alerts.concat(` ${alert}`);
+    }
+  }
+  if (!alerts) {
+    alerts = 'No alerts';
+  }
+
+  el.textContent = `${fullName}: ${alerts}`;
 }
 
 function redraw() {
@@ -104,7 +131,7 @@ function handleChange() {
     window.setTimeout(handleChange, 25);
     return;
   }
-  currentTime = currentTime.add(15, 'm');
+  currentTime = currentTime.add(60, 'm');
   redraw();
   window.setTimeout(handleChange, 25);
 }
@@ -176,15 +203,41 @@ function handlePlayPauseClick() {
 }
 
 // TODO(jdhollen): move everything below here to an onload event.
+function loadMapData() {
+  d3.json(
+    'data/10m.json',
+    (error, us) => {
+      if (error) {
+        throw error;
+      }
+
+      drawBaseMap(us);
+      loadWeatherData();
+    },
+  );
+}
+
+function loadCountyNames() {
+  d3.json(
+    'data/county-names.json',
+    (error, names) => {
+      if (error) {
+        throw error;
+      }
+      countyNames = names;
+      loadMapData();
+    },
+  );
+}
+
 d3.json(
-  'data/10m.json',
-  (error, us) => {
+  'data/alert-names.json',
+  (error, names) => {
     if (error) {
       throw error;
     }
-
-    drawBaseMap(us);
-    loadWeatherData();
+    alertNames = names;
+    loadCountyNames();
   },
 );
 
