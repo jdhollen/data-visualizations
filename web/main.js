@@ -131,7 +131,7 @@ function handleChange() {
     window.setTimeout(handleChange, 25);
     return;
   }
-  currentTime = currentTime.add(60, 'm');
+  currentTime = currentTime.add(15, 'm');
   redraw();
   window.setTimeout(handleChange, 25);
 }
