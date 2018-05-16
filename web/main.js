@@ -46,13 +46,8 @@ function refreshHoverText() {
     return;
   }
 
-  let countyId = selectedCounty;
-  if (selectedCounty[0] === '0') {
-    countyId = countyId.substring(1);
-  }
-
-  const stateName = countyNames[`${(countyId - (countyId % 1000))}`];
-  const fullName = `${countyNames[countyId]}, ${stateName}`;
+  const stateName = countyNames[`${selectedCounty.substring(0, 2)}000`];
+  const fullName = `${countyNames[selectedCounty]}, ${stateName}`;
 
   const classString =
     document.getElementById(`county${selectedCounty}`).getAttribute('class');
