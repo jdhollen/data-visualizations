@@ -1,7 +1,8 @@
 /* global d3: false, topojson: false, moment: false */
 /* eslint-env browser */
 
-const svg = d3.select('#map');
+const context = d3.select('canvas').node().getContext('2d');
+const canvasPath = d3.geoPath().context(context);
 const data = {};
 let countyNames = {};
 let alertNames = {};
@@ -15,6 +16,7 @@ const min = moment.utc('20180101', 'YYYYMMDD').valueOf();
 const max = moment.utc('20180501', 'YYYYMMDD').valueOf();
 const positionSteps = 1000;
 const countyElementLookup = {};
+const countyFeatures = {};
 
 const types = [
   'SV', 'TO', 'MA', 'AF', 'AS', 'AV', 'BH', 'BS', 'BZ', 'CF', 'DU', 'DS', 'EC',
@@ -22,6 +24,71 @@ const types = [
   'HP', 'HT', 'HU', 'HW', 'HY', 'HZ', 'IS', 'IP', 'LB', 'LE', 'LO', 'LS', 'LW',
   'RB', 'RH', 'SB', 'SC', 'SE', 'SI', 'SM', 'SN', 'SQ', 'SR', 'SU', 'TI', 'TR',
   'TS', 'TY', 'UP', 'VO', 'WC', 'WI', 'WS', 'WW', 'ZF', 'ZR'];
+
+const alertColors = {
+  SV: 'orange',
+  TO: 'red',
+  MA: 'palevioletred',
+  AF: 'red',
+  AS: 'gray',
+  AV: 'blue',
+  BH: 'thistle',
+  BS: 'cyan',
+  BZ: 'orangered',
+  CF: 'forestgreen',
+  DU: 'darkkhaki',
+  DS: 'bisque',
+  EC: 'blue',
+  EH: 'mediumvioletred',
+  EW: 'deeppink',
+  FA: 'seagreen',
+  FF: 'limegreen',
+  FL: 'green',
+  FR: 'green',
+  FZ: 'cyan',
+  FG: 'slategray',
+  FW: 'deeppink',
+  GL: '#dda0dd',
+  HF: '#cd5c5c',
+  HI: '#cd5c5c',
+  HS: 'blue',
+  HP: 'lightsteelblue',
+  HT: 'coral',
+  HU: '#dc143c',
+  HW: 'goldenrod',
+  HY: 'springgreen',
+  HZ: 'blue',
+  IS: 'darkmagenta',
+  IP: 'cyan',
+  LB: 'blue',
+  LE: 'blue',
+  LO: 'khaki',
+  LS: 'green',
+  LW: 'thistle',
+  RB: 'thistle',
+  RH: 'red',
+  SB: 'blue',
+  SC: 'thistle',
+  SE: 'thistle',
+  SI: 'thistle',
+  SM: 'khaki',
+  SN: 'blue',
+  SQ: 'blue',
+  SR: '#9400d3',
+  SU: 'forestgreen',
+  TI: '#b22222',
+  TR: '#b22222',
+  TS: 'red',
+  TY: '#dc143c',
+  UP: 'blue',
+  VO: 'red',
+  WC: 'lightsteelblue',
+  WI: 'tan',
+  WS: 'hotpink',
+  WW: '#7b68ee',
+  ZF: 'cyan',
+  ZR: 'cyan',
+};
 
 let currentTime = moment.utc('20180101', 'YYYYMMDD');
 
@@ -71,6 +138,14 @@ function refreshHoverText() {
   el.textContent = `${fullName}: ${alerts}`;
 }
 
+function drawCounty(county, fillStyle) {
+  context.fillStyle = fillStyle;
+  context.beginPath();
+  canvasPath(county);
+  context.fill();
+  context.stroke();
+}
+
 function redraw() {
   const newValue = currentTime.format('YYYYMMDDHHmm');
   const newClasses = {};
@@ -92,6 +167,10 @@ function redraw() {
       } else {
         newClasses[counties[j]] = newClasses[counties[j]].concat(` ${type}`);
       }
+
+      if (!changes[counties[j]]) {
+        changes[counties[j]] = type;
+      }
     }
   }
 
@@ -99,10 +178,12 @@ function redraw() {
   for (let i = 0; i < changeKeys.length; i += 1) {
     const county = changeKeys[i];
     if (previous[county] !== changes[county]) {
-      const el = countyElementLookup[county];
+      /* const el = countyElementLookup[county];
       if (el) {
         el.setAttribute('class', newClasses[county]);
-      }
+      } */
+      const color = alertColors[changes[county]] || '#cccccc';
+      drawCounty(countyFeatures[county], color);
     }
   }
 
@@ -159,32 +240,21 @@ function handleMouseOut(d) {
 }
 
 function drawBaseMap(us) {
-  const context = d3.select('canvas').node().getContext('2d');
-  const canvasPath = d3.geoPath().context(context);
+  const counties = topojson.feature(us, us.objects.counties).features;
 
+  // TODO(jdhollen): match pixel scaling.
+  context.scale(2, 2);
   context.beginPath();
-  context.imageSmoothingEnabled = false;
-  context.translate(0.5, 0.5);
-  context.strokeStyle = '#df4b26';
+  context.strokeStyle = '#ffffff';
   context.lineWidth = 0.5;
   canvasPath(topojson.mesh(us));
   context.stroke();
 
-  const path = d3.geoPath();
-  svg.append('g')
-    .attr('class', 'counties')
-    .selectAll('path')
-    .data(topojson.feature(us, us.objects.counties).features)
-    .enter()
-    .append('path')
-    .attr('id', d => `county${d.id}`)
-    .on('mouseover', handleMouseOver)
-    .on('mouseout', handleMouseOut)
-    .attr('d', path);
-
-  svg.append('path')
-    .attr('class', 'county-borders')
-    .attr('d', path(topojson.mesh(us, us.objects.counties, (a, b) => a !== b)));
+  // TODO(jdhollen): just stamp the country instead.
+  for (let i = 0; i < counties.length; i += 1) {
+    countyFeatures[counties[i].id] = counties[i];
+    drawCounty(counties[i], '#ccc');
+  }
 
   const keys = Object.keys(countyNames);
   for (let i = 0; i < keys.length; i += 1) {
@@ -219,12 +289,12 @@ function loadWeatherData() {
   );
 }
 
-function sizeSvg() {
+function sizeCanvas() {
   const w = Math.min(860, window.innerWidth);
   const h = Math.max(300, Math.min(600, window.innerHeight - 100));
   const width = w * 0.625 < h ? w : h / 0.625;
 
-  svg.attr('width', `${width - 2}px`);
+  // TODO(jdhollen): size canvas.
 }
 
 function handlePlayPauseClick() {
@@ -274,5 +344,5 @@ document.getElementById('slider').addEventListener('change', handleSliderChangeE
 document.getElementById('slider').addEventListener('input', handleSliderInputEvent);
 document.getElementById('playPause').addEventListener('click', handlePlayPauseClick);
 
-window.addEventListener('resize', sizeSvg);
-sizeSvg();
+window.addEventListener('resize', sizeCanvas);
+sizeCanvas();
