@@ -14,6 +14,7 @@ let slideInProgress = false;
 const min = moment.utc('20180101', 'YYYYMMDD').valueOf();
 const max = moment.utc('20180501', 'YYYYMMDD').valueOf();
 const positionSteps = 1000;
+const countyElementLookup = {};
 
 const types = [
   'SV', 'TO', 'MA', 'AF', 'AS', 'AV', 'BH', 'BS', 'BZ', 'CF', 'DU', 'DS', 'EC',
@@ -89,7 +90,7 @@ function redraw() {
       (data[type] && data[type][newValue]) ? data[type][newValue] : [];
 
     for (let j = 0; j < counties.length; j += 1) {
-      const el = document.getElementById(`county${counties[j]}`);
+      const el = countyElementLookup[counties[j]];
       if (el) {
         previous.push(el);
         el.classList.add(type);
@@ -164,6 +165,14 @@ function drawBaseMap(us) {
   svg.append('path')
     .attr('class', 'county-borders')
     .attr('d', path(topojson.mesh(us, us.objects.counties, (a, b) => a !== b)));
+
+  const keys = Object.keys(countyNames);
+  for (let i = 0; i < keys.length; i += 1) {
+    const element = document.getElementById(`county${keys[i]}`);
+    if (element) {
+      countyElementLookup[keys[i]] = element;
+    }
+  }
 }
 
 function loadWeatherData() {
