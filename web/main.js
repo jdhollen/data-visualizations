@@ -7,6 +7,8 @@ let loadedIndex = 0;
 let selectedCounty = '';
 let previous = [];
 let paused = false;
+let pausedBeforeInputStarted = false;
+let slideInProgress = false;
 const min = moment.utc('20180101', 'YYYYMMDD').valueOf();
 const max = moment.utc('20180501', 'YYYYMMDD').valueOf();
 const positionSteps = 1000;
@@ -74,12 +76,27 @@ function redraw() {
   refreshHoverText();
 }
 
-function handleSliderChange() {
+function processSliderEvent() {
   const newValue = document.getElementById('slider').value;
   const newTime =
     moment(min + (Math.floor((max - min) / positionSteps) * newValue));
   currentTime = newTime.subtract(newTime.minutes() % 15, 'm');
   redraw();
+}
+
+function handleSliderInputEvent() {
+  if (!slideInProgress) {
+    pausedBeforeInputStarted = paused;
+  }
+  slideInProgress = true;
+  paused = true;
+  processSliderEvent();
+}
+
+function handleSliderChangeEvent() {
+  slideInProgress = false;
+  paused = pausedBeforeInputStarted;
+  processSliderEvent();
 }
 
 function handleChange() {
@@ -171,8 +188,8 @@ d3.json(
   },
 );
 
-document.getElementById('slider').addEventListener('change', handleSliderChange);
-document.getElementById('slider').addEventListener('input', handleSliderChange);
+document.getElementById('slider').addEventListener('change', handleSliderChangeEvent);
+document.getElementById('slider').addEventListener('input', handleSliderInputEvent);
 document.getElementById('playPause').addEventListener('click', handlePlayPauseClick);
 
 window.addEventListener('resize', sizeSvg);
