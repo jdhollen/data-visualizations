@@ -373,4 +373,5 @@ document.getElementById('slider').addEventListener('input', handleSliderInputEve
 document.getElementById('playPause').addEventListener('click', handlePlayPauseClick);
 
 window.addEventListener('resize', sizeCanvas);
+window.addEventListener('orientationchange', sizeCanvas);
 sizeCanvas();
