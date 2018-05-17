@@ -1,7 +1,11 @@
 /* global d3: false, topojson: false, moment: false */
 /* eslint-env browser */
 
+const svg = d3.select('#svg');
+const path = d3.geoPath();
+
 const context = d3.select('canvas').node().getContext('2d');
+const canvas = document.getElementById('map');
 const canvasPath = d3.geoPath().context(context);
 const data = {};
 let countyNames = {};
@@ -118,8 +122,8 @@ function refreshHoverText() {
   const stateName = countyNames[`${selectedCounty.substring(0, 2)}000`];
   const fullName = `${countyNames[selectedCounty]}, ${stateName}`;
 
-  const classString =
-    document.getElementById(`county${selectedCounty}`).getAttribute('class');
+  // TODO(jhollenbach): fix classname gettery.
+  const classString = '';
 
   let classes = [];
   if (classString) {
@@ -234,14 +238,12 @@ function handleMouseOver(d) {
   refreshHoverText();
 }
 
-function handleMouseOut(d) {
-  if (d.id === selectedCounty) {
-    selectedCounty = '';
-  }
+function handleMouseOut() {
+  selectedCounty = '';
   refreshHoverText();
 }
 
-function drawBaseMap(us) {
+function drawBaseMap() {
   const counties = topojson.feature(us, us.objects.counties).features;
 
   context.beginPath();
@@ -293,21 +295,21 @@ function sizeCanvas() {
   const w = Math.min(860, window.innerWidth);
   const h = Math.max(300, Math.min(600, window.innerHeight - 100));
   const width = w * 0.625 < h ? w : h / 0.625;
-  const height = w * 0.625;
-
-  const canvas = document.getElementById('map');
+  const height = width * 0.625;
 
   canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
-  canvas.width = 2 * width;
-  canvas.height = 2 * height;
+  canvas.width = devicePixelRatio * width;
+  canvas.height = devicePixelRatio * height;
   scaleFactor = width / 960;
   context.setTransform(1, 0, 0, 1, 0, 0);
   // TODO(jdhollen): replace 2 with pixel scaling for display.
   context.strokeStyle = '#ffffff';
   context.lineWidth = 0.5;
-  context.scale(2 * scaleFactor, 2 * scaleFactor);
+  context.scale(devicePixelRatio * scaleFactor, devicePixelRatio * scaleFactor);
+  svg.attr('width', width);
+  svg.attr('height', height);
   if (us) {
-    drawBaseMap(us);
+    drawBaseMap();
     redraw(true);
   }
 }
@@ -325,8 +327,18 @@ function loadMapData() {
       if (error) {
         throw error;
       }
+      svg.append('g')
+        .attr('class', 'counties')
+        .selectAll('path')
+        .data(topojson.feature(us, us.objects.counties).features)
+        .enter()
+        .append('path')
+        .attr('id', d => d.id)
+        .on('mouseover', handleMouseOver)
+        .on('mouseout', handleMouseOut)
+        .attr('d', path);
 
-      drawBaseMap(usData);
+      drawBaseMap();
       loadWeatherData();
     },
   );

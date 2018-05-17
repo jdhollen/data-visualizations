@@ -38,7 +38,7 @@ p {
 }
 
 .counties {
-  fill: #ccc;
+  fill: transparent;
   stroke: none;
 }
 
