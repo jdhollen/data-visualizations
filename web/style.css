@@ -191,68 +191,68 @@ p {
   width:calc(100% - 64px)
 }
 
-.SV { fill: orange; background-color: orange;} /* Severe Thunderstorm (SV) */
-.TO { fill: red; background-color: red;} /* Tornado (TO) */
-.MA { fill: palevioletred; background-color: palevioletred; } /* Marine (MA) */
-.AF { fill: red; background-color: red; } /* Volcanic Ashfall (AF) */
-.AS { fill: gray; background-color: gray; } /* Air Stagnation (AS) */
-.AV { fill: blue; background-color: blue; } /* Avalanche (AV) */
-.BH { fill: thistle; background-color: thistle; } /* Beach Hazard (BH) */
-.BS { fill: cyan; background-color: cyan; } /* Blowing Snow (BS) */
-.BZ { fill: orangered; background-color: orangered; } /* Blizzard (BZ) */
-.CF { fill: forestgreen; background-color: forestgreen; } /* Coastal Flood (CF) */
-.DU { fill: darkkhaki; background-color: darkkhaki; } /* Blowing Dust (DU) */
-.DS { fill: bisque; background-color: bisque; } /* Dust Storm (DS) */
-.EC { fill: blue; background-color: blue; } /* Extreme Cold (EC) */
-.EH { fill: mediumvioletred; background-color: mediumvioletred;} /* Excessive Heat (EH) */
-.EW { fill: deeppink; background-color: deeppink;} /* Extreme Wind (EW) */
-.FA { fill: seagreen; background-color: seagreen; } /* Areal Flood (FA) */
-.FF { fill: limegreen; background-color: limegreen; } /* Flash Flood (FF) */
-.FL { fill: green; background-color: green; } /* Flood (FL) */
-.FR { fill: green; background-color: green; } /* Frost (FR) */
-.FZ { fill: cyan; background-color: cyan; } /* Freeze (FZ) */
-.FG { fill: slategray; background-color: slategray; } /* Dense Fog (FG) */
-.FW { fill: deeppink; background-color: deeppink; } /* Red Flag (FW) */
-.GL { fill: #dda0dd; background-color: #dda0dd; } /* Gale (GL) */
-.HF { fill: #cd5c5c; background-color: #cd5c5c; } /* Hurricane Force Wind (HF) */
-.HI { fill: #cd5c5c; background-color: #cd5c5c; } /* Inland Hurricane Wind (HI) */
-.HS { fill: blue; background-color: blue; } /* Heavy Snow (HS) */
-.HP { fill: lightsteelblue; background-color: lightsteelblue; } /* Heavy Sleet (HP) */
-.HT { fill: coral; background-color: coral; } /* Heat (HT) */
-.HU { fill: #dc143c; background-color: #dc143c; } /* Hurricane (HU) */
-.HW { fill: goldenrod; background-color: goldenrod; } /* High Wind (HW) */
-.HY { fill: springgreen; background-color: springgreen; } /* Hydrologic (HY) */
-.HZ { fill: blue; background-color: blue; } /* Hard Freeze (HZ) */
-.IS { fill: darkmagenta; background-color: darkmagenta; } /* Ice Storm (IS) */
-.IP { fill: cyan; background-color: cyan; } /* Sleet (IP) */
-.LB { fill: blue; background-color: blue; } /* Lake Effect Snow and Blowing Snow (LB) */
-.LE { fill: blue; background-color: blue; } /* Lake Effect Snow (LE) */
-.LO { fill: khaki; background-color: khaki; } /* Low Water (LO) */
-.LS { fill: green; background-color: green; } /* Lakeshore Flood (LS) */
-.LW { fill: thistle; background-color: thistle; } /* Lake Wind (LW) */
-.RB { fill: thistle; background-color: thistle; } /* Small Craft for Rough Bar (RB) */
-.RH { fill: red; background-color: red; } /* Radiological Hazard (RH) */
-.SB { fill: blue; background-color: blue; } /* Snow and Blowing Snow (SB) */
-.SC { fill: thistle; background-color: thistle; } /* Small Craft (SC) */
-.SE { fill: thistle; background-color: thistle; } /* Hazardous Seas (SE) */
-.SI { fill: thistle; background-color: thistle; } /* Small Craft for Winds (SI) */
-.SM { fill: khaki; background-color: khaki; } /* Dense Smoke (SM) */
-.SN { fill: blue; background-color: blue; } /* Snow (SN) */
-.SQ { fill: blue; background-color: blue; } /* Snow Squall (SQ) */
-.SR { fill: #9400d3; background-color: #9400d3; } /* Storm (SR) */
-.SU { fill: forestgreen; background-color: forestgreen; } /* High Surf (SU) */
-.TI { fill: #b22222; background-color: #b22222; } /* Inland Tropical Storm Wind (TI) */
-.TR { fill: #b22222; background-color: #b22222; } /* Tropical Storm (TR) */
-.TS { fill: red; background-color: red; } /* Tsunami (TS) */
-.TY { fill: #dc143c; background-color: #dc143c; } /* Typhoon (TY) */
-.UP { fill: blue; background-color: blue; } /* Ice Accretion (UP) */
-.VO { fill: red; background-color: red; } /* Volcano (VO) */
-.WC { fill: lightsteelblue; background-color: lightsteelblue; } /* Wind Chill (WC) */
-.WI { fill: tan; background-color: tan; } /* Wind (WI) */
-.WS { fill: hotpink; background-color: hotpink; } /* Winter Storm (WS) */
-.WW { fill: #7b68ee; background-color: #7b68ee; } /* Winter Weather (WW) */
-.ZF { fill: cyan; background-color: cyan; } /* Freezing Fog (ZF) */
-.ZR { fill: cyan; background-color: cyan; } /* Freezing Rain (ZR) */
+.SV { background-color: orange;} /* Severe Thunderstorm (SV) */
+.TO { background-color: red;} /* Tornado (TO) */
+.MA { background-color: palevioletred; } /* Marine (MA) */
+.AF { background-color: red; } /* Volcanic Ashfall (AF) */
+.AS { background-color: gray; } /* Air Stagnation (AS) */
+.AV { background-color: blue; } /* Avalanche (AV) */
+.BH { background-color: thistle; } /* Beach Hazard (BH) */
+.BS { background-color: cyan; } /* Blowing Snow (BS) */
+.BZ { background-color: orangered; } /* Blizzard (BZ) */
+.CF { background-color: forestgreen; } /* Coastal Flood (CF) */
+.DU { background-color: darkkhaki; } /* Blowing Dust (DU) */
+.DS { background-color: bisque; } /* Dust Storm (DS) */
+.EC { background-color: blue; } /* Extreme Cold (EC) */
+.EH { background-color: mediumvioletred;} /* Excessive Heat (EH) */
+.EW { background-color: deeppink;} /* Extreme Wind (EW) */
+.FA { background-color: seagreen; } /* Areal Flood (FA) */
+.FF { background-color: limegreen; } /* Flash Flood (FF) */
+.FL { background-color: green; } /* Flood (FL) */
+.FR { background-color: green; } /* Frost (FR) */
+.FZ { background-color: cyan; } /* Freeze (FZ) */
+.FG { background-color: slategray; } /* Dense Fog (FG) */
+.FW { background-color: deeppink; } /* Red Flag (FW) */
+.GL { background-color: #dda0dd; } /* Gale (GL) */
+.HF { background-color: #cd5c5c; } /* Hurricane Force Wind (HF) */
+.HI { background-color: #cd5c5c; } /* Inland Hurricane Wind (HI) */
+.HS { background-color: blue; } /* Heavy Snow (HS) */
+.HP { background-color: lightsteelblue; } /* Heavy Sleet (HP) */
+.HT { background-color: coral; } /* Heat (HT) */
+.HU { background-color: #dc143c; } /* Hurricane (HU) */
+.HW { background-color: goldenrod; } /* High Wind (HW) */
+.HY { background-color: springgreen; } /* Hydrologic (HY) */
+.HZ { background-color: blue; } /* Hard Freeze (HZ) */
+.IS { background-color: darkmagenta; } /* Ice Storm (IS) */
+.IP { background-color: cyan; } /* Sleet (IP) */
+.LB { background-color: blue; } /* Lake Effect Snow and Blowing Snow (LB) */
+.LE { background-color: blue; } /* Lake Effect Snow (LE) */
+.LO { background-color: khaki; } /* Low Water (LO) */
+.LS { background-color: green; } /* Lakeshore Flood (LS) */
+.LW { background-color: thistle; } /* Lake Wind (LW) */
+.RB { background-color: thistle; } /* Small Craft for Rough Bar (RB) */
+.RH { background-color: red; } /* Radiological Hazard (RH) */
+.SB { background-color: blue; } /* Snow and Blowing Snow (SB) */
+.SC { background-color: thistle; } /* Small Craft (SC) */
+.SE { background-color: thistle; } /* Hazardous Seas (SE) */
+.SI { background-color: thistle; } /* Small Craft for Winds (SI) */
+.SM { background-color: khaki; } /* Dense Smoke (SM) */
+.SN { background-color: blue; } /* Snow (SN) */
+.SQ { background-color: blue; } /* Snow Squall (SQ) */
+.SR { background-color: #9400d3; } /* Storm (SR) */
+.SU { background-color: forestgreen; } /* High Surf (SU) */
+.TI { background-color: #b22222; } /* Inland Tropical Storm Wind (TI) */
+.TR { background-color: #b22222; } /* Tropical Storm (TR) */
+.TS { background-color: red; } /* Tsunami (TS) */
+.TY { background-color: #dc143c; } /* Typhoon (TY) */
+.UP { background-color: blue; } /* Ice Accretion (UP) */
+.VO { background-color: red; } /* Volcano (VO) */
+.WC { background-color: lightsteelblue; } /* Wind Chill (WC) */
+.WI { background-color: tan; } /* Wind (WI) */
+.WS { background-color: hotpink; } /* Winter Storm (WS) */
+.WW { background-color: #7b68ee; } /* Winter Weather (WW) */
+.ZF { background-color: cyan; } /* Freezing Fog (ZF) */
+.ZR { background-color: cyan; } /* Freezing Rain (ZR) */
 
 input[type=range] {
   -webkit-appearance: none;
