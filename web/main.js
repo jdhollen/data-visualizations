@@ -12,6 +12,8 @@ let previous = {};
 let paused = false;
 let pausedBeforeInputStarted = false;
 let slideInProgress = false;
+let scaleFactor = 1;
+let us = {};
 const min = moment.utc('20180101', 'YYYYMMDD').valueOf();
 const max = moment.utc('20180501', 'YYYYMMDD').valueOf();
 const positionSteps = 1000;
@@ -146,7 +148,7 @@ function drawCounty(county, fillStyle) {
   context.stroke();
 }
 
-function redraw() {
+function redraw(ignorePreviousState) {
   const newValue = currentTime.format('YYYYMMDDHHmm');
   const newClasses = {};
   const changes = {};
@@ -177,7 +179,7 @@ function redraw() {
   const changeKeys = Object.keys(changes);
   for (let i = 0; i < changeKeys.length; i += 1) {
     const county = changeKeys[i];
-    if (previous[county] !== changes[county]) {
+    if (ignorePreviousState || previous[county] !== changes[county]) {
       /* const el = countyElementLookup[county];
       if (el) {
         el.setAttribute('class', newClasses[county]);
@@ -242,15 +244,13 @@ function handleMouseOut(d) {
 function drawBaseMap(us) {
   const counties = topojson.feature(us, us.objects.counties).features;
 
-  // TODO(jdhollen): match pixel scaling.
-  context.scale(2, 2);
   context.beginPath();
   context.strokeStyle = '#ffffff';
   context.lineWidth = 0.5;
   canvasPath(topojson.mesh(us));
   context.stroke();
 
-  // TODO(jdhollen): just stamp the country instead.
+  // TODO(jdhollen): just stamp the whiole country instead.
   for (let i = 0; i < counties.length; i += 1) {
     countyFeatures[counties[i].id] = counties[i];
     drawCounty(counties[i], '#ccc');
@@ -293,8 +293,23 @@ function sizeCanvas() {
   const w = Math.min(860, window.innerWidth);
   const h = Math.max(300, Math.min(600, window.innerHeight - 100));
   const width = w * 0.625 < h ? w : h / 0.625;
+  const height = w * 0.625;
 
-  // TODO(jdhollen): size canvas.
+  const canvas = document.getElementById('map');
+
+  canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
+  canvas.width = 2 * width;
+  canvas.height = 2 * height;
+  scaleFactor = width / 960;
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  // TODO(jdhollen): replace 2 with pixel scaling for display.
+  context.strokeStyle = '#ffffff';
+  context.lineWidth = 0.5;
+  context.scale(2 * scaleFactor, 2 * scaleFactor);
+  if (us) {
+    drawBaseMap(us);
+    redraw(true);
+  }
 }
 
 function handlePlayPauseClick() {
@@ -305,12 +320,13 @@ function handlePlayPauseClick() {
 function loadMapData() {
   d3.json(
     'data/10m.json',
-    (error, us) => {
+    (error, usData) => {
+      us = usData;
       if (error) {
         throw error;
       }
 
-      drawBaseMap(us);
+      drawBaseMap(usData);
       loadWeatherData();
     },
   );
