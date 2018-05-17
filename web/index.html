@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>NWS Watches and Warnings</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
@@ -12,7 +12,8 @@
     </div>
     <div class="block">
       <div class="mapContainer" id="mapContainer">
-        <svg class="map" id="map" width="20em" viewbox="0 0 960 600"></svg>
+        <canvas id="map" style="width:320px; height: 200px;" width="640" height="400"></canvas>
+        <svg id="svg" style="position: absolute; top: 0; left: 0;" viewbox="0 0 960 600"></svg>
       </div>
       <div class="footer">
         <div class="playbackControls">
