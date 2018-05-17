@@ -119,16 +119,10 @@ function refreshHoverText() {
     return;
   }
 
+  // TODO(jdhollen): flush out all missing names + fix.
   const stateName = countyNames[`${selectedCounty.substring(0, 2)}000`];
   const fullName = `${countyNames[selectedCounty]}, ${stateName}`;
-
-  // TODO(jhollenbach): fix classname gettery.
-  const classString = '';
-
-  let classes = [];
-  if (classString) {
-    classes = classString.split(' ');
-  }
+  const classes = previous[selectedCounty] || [];
 
   let alerts = '';
   for (let i = 0; i < classes.length; i += 1) {
@@ -159,7 +153,7 @@ function redraw(ignorePreviousState) {
 
   const previousKeys = Object.keys(previous);
   for (let i = 0; i < previousKeys.length; i += 1) {
-    changes[previousKeys[i]] = '';
+    changes[previousKeys[i]] = [];
   }
 
   for (let i = 0; i < types.length; i += 1) {
@@ -169,13 +163,11 @@ function redraw(ignorePreviousState) {
 
     for (let j = 0; j < counties.length; j += 1) {
       if (!newClasses[counties[j]]) {
-        newClasses[counties[j]] = type;
+        newClasses[counties[j]] = [type];
+        changes[counties[j]] = [type];
       } else {
-        newClasses[counties[j]] = newClasses[counties[j]].concat(` ${type}`);
-      }
-
-      if (!changes[counties[j]]) {
-        changes[counties[j]] = type;
+        newClasses[counties[j]].push(type);
+        changes[counties[j]].push(type);
       }
     }
   }
@@ -183,12 +175,10 @@ function redraw(ignorePreviousState) {
   const changeKeys = Object.keys(changes);
   for (let i = 0; i < changeKeys.length; i += 1) {
     const county = changeKeys[i];
-    if (ignorePreviousState || previous[county] !== changes[county]) {
-      /* const el = countyElementLookup[county];
-      if (el) {
-        el.setAttribute('class', newClasses[county]);
-      } */
-      const color = alertColors[changes[county]] || '#cccccc';
+    const alertForMap = changes[county] ? changes[county][0] : '';
+    const previousAlertForMap = previous[county] ? previous[county][0] : '';
+    if (ignorePreviousState || alertForMap !== previousAlertForMap) {
+      const color = alertColors[alertForMap] || '#cccccc';
       drawCounty(countyFeatures[county], color);
     }
   }
