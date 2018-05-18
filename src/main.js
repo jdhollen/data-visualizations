@@ -105,11 +105,12 @@ function timeToPosition() {
   if (currentTime <= min) {
     return 1;
   }
-  if (currentTime >= max) {
+  if (currentTime >= max - dataStep) {
     return positionSteps;
   }
 
-  return positionSteps - Math.ceil(((max - currentTime) / (max - min)) * positionSteps);
+  return positionSteps -
+    Math.ceil(((max - dataStep - currentTime) / (max - dataStep - min)) * positionSteps);
 }
 
 function refreshHoverText() {
@@ -194,7 +195,7 @@ function redraw(ignorePreviousState) {
 
 function processSliderEvent() {
   const newValue = document.getElementById('slider').value;
-  let stepSize = Math.floor((max - min) / positionSteps);
+  let stepSize = Math.floor((max - dataStep - min) / positionSteps);
   stepSize -= (stepSize % step);
   const newTime = moment(min + (stepSize * newValue));
   currentTime = newTime.subtract(newTime.minutes() % 15, 'm').valueOf();
@@ -217,7 +218,7 @@ function handleSliderChangeEvent() {
 }
 
 function handleChange() {
-  if (paused || currentTime >= max) {
+  if (paused || currentTime >= max - dataStep) {
     window.setTimeout(handleChange, 25);
     return;
   }
@@ -260,21 +261,32 @@ function drawBaseMap() {
   }
 }
 
+const files = [
+  '20180101',
+  '20180201',
+  '20180301',
+  '20180401',
+];
+
+let fileIndex = 0;
+
 function loadWeatherData() {
   d3.json(
-    'data/counties-smol-20180101.json',
+    `data/counties-smol-${files[fileIndex]}.json`,
     (error, counties) => {
       if (error) {
         throw error;
       }
 
+      const priorSteps =
+        (moment.utc(files[fileIndex], 'YYYYMMDD').valueOf() - min) / dataStep;
       const countyKeys = Object.keys(counties);
       for (let i = 0; i < countyKeys.length; i += 1) {
         const county = counties[countyKeys[i]];
         const runs = Object.keys(county);
         for (let j = 0; j < runs.length; j += 1) {
           const run = county[j];
-          let time = run[0] - 1;
+          let time = (run[0] + priorSteps) - 1;
           const length = run[1];
           const values = run[2];
 
@@ -292,7 +304,12 @@ function loadWeatherData() {
           }
         }
       }
-      handleChange();
+      fileIndex += 1;
+      if (fileIndex < files.length) {
+        loadWeatherData();
+      } else {
+        handleChange();
+      }
     },
   );
 }
@@ -308,7 +325,6 @@ function sizeCanvas() {
   canvas.height = devicePixelRatio * height;
   scaleFactor = width / 960;
   context.setTransform(1, 0, 0, 1, 0, 0);
-  // TODO(jdhollen): replace 2 with pixel scaling for display.
   context.strokeStyle = '#ffffff';
   context.lineWidth = 0.5;
   context.scale(devicePixelRatio * scaleFactor, devicePixelRatio * scaleFactor);
