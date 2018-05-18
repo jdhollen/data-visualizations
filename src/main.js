@@ -3,6 +3,10 @@
 
 const svg = d3.select('#svg');
 const path = d3.geoPath();
+const dataStep = 15 * 60 * 1000;
+
+// TODO(jdhollen): make this configurable.
+const step = 15 * 60 * 1000;
 
 const context = d3.select('canvas').node().getContext('2d');
 const canvas = document.getElementById('map');
@@ -10,7 +14,6 @@ const canvasPath = d3.geoPath().context(context);
 const data = {};
 let countyNames = {};
 let alertNames = {};
-let loadedIndex = 0;
 let selectedCounty = '';
 let previous = {};
 let paused = false;
@@ -96,7 +99,7 @@ const alertColors = {
   ZR: 'cyan',
 };
 
-let currentTime = moment.utc('20180101', 'YYYYMMDD');
+let currentTime = moment.utc('20180101', 'YYYYMMDD').valueOf();
 
 function timeToPosition() {
   if (currentTime <= min) {
@@ -147,7 +150,7 @@ function drawCounty(county, fillStyle) {
 }
 
 function redraw(ignorePreviousState) {
-  const newValue = currentTime.format('YYYYMMDDHHmm');
+  const newValue = (currentTime - min) / dataStep;
   const newClasses = {};
   const changes = {};
 
@@ -184,17 +187,17 @@ function redraw(ignorePreviousState) {
   }
 
   previous = newClasses;
-  document.getElementById('time').textContent =
-    currentTime.format('YYYY-MM-DD HH:mm');
+  document.getElementById('time').textContent = new Date(currentTime);
   document.getElementById('slider').value = timeToPosition();
   refreshHoverText();
 }
 
 function processSliderEvent() {
   const newValue = document.getElementById('slider').value;
-  const newTime =
-    moment(min + (Math.floor((max - min) / positionSteps) * newValue));
-  currentTime = newTime.subtract(newTime.minutes() % 15, 'm');
+  let stepSize = Math.floor((max - min) / positionSteps);
+  stepSize -= (stepSize % step);
+  const newTime = moment(min + (stepSize * newValue));
+  currentTime = newTime.subtract(newTime.minutes() % 15, 'm').valueOf();
   redraw();
 }
 
@@ -214,11 +217,11 @@ function handleSliderChangeEvent() {
 }
 
 function handleChange() {
-  if (paused || currentTime.valueOf() >= max) {
+  if (paused || currentTime >= max) {
     window.setTimeout(handleChange, 25);
     return;
   }
-  currentTime = currentTime.add(15, 'm');
+  currentTime += step;
   redraw();
   window.setTimeout(handleChange, 25);
 }
@@ -258,25 +261,38 @@ function drawBaseMap() {
 }
 
 function loadWeatherData() {
-  loadedIndex += 1;
   d3.json(
-    `data/outfile-${types[loadedIndex - 1]}.json`,
-    (error, days) => {
-      if (error && loadedIndex < types.length) {
-        loadWeatherData();
-        return;
-      } else if (error) {
-        handleChange();
-        return;
+    'data/counties-smol.json',
+    (error, counties) => {
+      if (error) {
+        throw error;
       }
 
-      data[types[loadedIndex - 1]] = days;
+      const countyKeys = Object.keys(counties);
+      for (let i = 0; i < countyKeys.length; i += 1) {
+        const county = counties[countyKeys[i]];
+        const runs = Object.keys(county);
+        for (let j = 0; j < runs.length; j += 1) {
+          const run = county[j];
+          let time = run[0] - 1;
+          const length = run[1];
+          const values = run[2];
 
-      if (loadedIndex < types.length) {
-        loadWeatherData();
-      } else {
-        handleChange();
+          for (let k = 0; k < length; k += 1) {
+            for (let l = 0; l < values.length; l += 1) {
+              if (!data[values[l]]) {
+                data[values[l]] = [];
+              }
+              if (!data[values[l]][time]) {
+                data[values[l]][time] = [];
+              }
+              data[values[l]][time].push(countyKeys[i]);
+            }
+            time += 1;
+          }
+        }
       }
+      handleChange();
     },
   );
 }
