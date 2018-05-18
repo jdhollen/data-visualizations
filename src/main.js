@@ -28,11 +28,11 @@ const countyElementLookup = {};
 const countyFeatures = {};
 
 const types = [
-  'SV', 'TO', 'MA', 'AF', 'AS', 'AV', 'BH', 'BS', 'BZ', 'CF', 'DU', 'DS', 'EC',
-  'EH', 'EW', 'FA', 'FF', 'FL', 'FR', 'FZ', 'FG', 'FW', 'GL', 'HF', 'HI', 'HS',
-  'HP', 'HT', 'HU', 'HW', 'HY', 'HZ', 'IS', 'IP', 'LB', 'LE', 'LO', 'LS', 'LW',
-  'RB', 'RH', 'SB', 'SC', 'SE', 'SI', 'SM', 'SN', 'SQ', 'SR', 'SU', 'TI', 'TR',
-  'TS', 'TY', 'UP', 'VO', 'WC', 'WI', 'WS', 'WW', 'ZF', 'ZR'];
+  'RH', 'VO', 'AF', 'TS', 'TO', 'HU', 'TY', 'EW', 'HF', 'HI', 'TR', 'SV', 'BZ',
+  'SQ', 'WS', 'DS', 'WW', 'IS', 'LB', 'LE', 'HS', 'HP', 'FF', 'SB', 'SN', 'BS',
+  'IP', 'ZR', 'SR', 'GL', 'TI', 'SM', 'AV', 'DU', 'CF', 'LS', 'FA', 'FL', 'HY',
+  'ZF', 'FG', 'FW', 'HW', 'WI', 'EC', 'EH', 'HZ', 'HT', 'FZ', 'LW', 'WC', 'UP',
+  'SE', 'SU', 'BH', 'LO', 'MA', 'SC', 'SI', 'RB', 'FR', 'AS'];
 
 const alertColors = {
   SV: 'orange',
