@@ -109,7 +109,7 @@ function timeToPosition() {
     return positionSteps;
   }
 
-  return positionSteps -
+  return (1 + positionSteps) -
     Math.ceil(((max - dataStep - currentTime) / (max - dataStep - min)) * positionSteps);
 }
 
@@ -195,10 +195,10 @@ function redraw(ignorePreviousState) {
 
 function processSliderEvent() {
   const newValue = document.getElementById('slider').value;
-  let stepSize = Math.floor((max - dataStep - min) / positionSteps);
-  stepSize -= (stepSize % step);
-  const newTime = moment(min + (stepSize * newValue));
-  currentTime = newTime.subtract(newTime.minutes() % 15, 'm').valueOf();
+  const stepSize = Math.floor((max - dataStep - min) / positionSteps);
+  // TODO(jdhollen): round instead of floor here.
+  const offset = (stepSize * newValue) - ((stepSize * newValue) % step);
+  currentTime = min + offset;
   redraw();
 }
 
