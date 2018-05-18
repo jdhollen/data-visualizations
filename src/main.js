@@ -245,7 +245,7 @@ function drawBaseMap() {
   canvasPath(topojson.mesh(us));
   context.stroke();
 
-  // TODO(jdhollen): just stamp the whiole country instead.
+  // TODO(jdhollen): just stamp the whole country instead.
   for (let i = 0; i < counties.length; i += 1) {
     countyFeatures[counties[i].id] = counties[i];
     drawCounty(counties[i], '#ccc');
@@ -262,7 +262,7 @@ function drawBaseMap() {
 
 function loadWeatherData() {
   d3.json(
-    'data/counties-smol.json',
+    'data/counties-smol-20180101.json',
     (error, counties) => {
       if (error) {
         throw error;
@@ -279,6 +279,7 @@ function loadWeatherData() {
           const values = run[2];
 
           for (let k = 0; k < length; k += 1) {
+            time += 1;
             for (let l = 0; l < values.length; l += 1) {
               if (!data[values[l]]) {
                 data[values[l]] = [];
@@ -288,7 +289,6 @@ function loadWeatherData() {
               }
               data[values[l]][time].push(countyKeys[i]);
             }
-            time += 1;
           }
         }
       }
