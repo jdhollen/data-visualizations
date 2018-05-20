@@ -238,6 +238,9 @@ function handleMouseOut() {
 }
 
 function drawBaseMap() {
+  if (!us.objects) {
+    return;
+  }
   const counties = topojson.feature(us, us.objects.counties).features;
 
   context.beginPath();
