@@ -11,7 +11,6 @@ const step = 15 * 60 * 1000;
 const context = d3.select('canvas').node().getContext('2d');
 const canvas = document.getElementById('map');
 const canvasPath = d3.geoPath().context(context);
-const data = {};
 let countyNames = {};
 let alertNames = {};
 let selectedCounty = '';
@@ -21,6 +20,10 @@ let pausedBeforeInputStarted = false;
 let slideInProgress = false;
 let scaleFactor = 1;
 let us = {};
+let buffer;
+let arr32;
+let arr16;
+
 const min = moment.utc('20180101', 'YYYYMMDD').valueOf();
 const max = moment.utc('20180501', 'YYYYMMDD').valueOf();
 const positionSteps = 1000;
@@ -151,6 +154,10 @@ function drawCounty(county, fillStyle) {
 }
 
 function redraw(ignorePreviousState) {
+  if (!arr32) {
+    return;
+  }
+
   const newValue = (currentTime - min) / dataStep;
   const newClasses = {};
   const changes = {};
@@ -160,30 +167,39 @@ function redraw(ignorePreviousState) {
     changes[previousKeys[i]] = [];
   }
 
-  for (let i = 0; i < types.length; i += 1) {
-    const type = types[i];
-    const counties =
-      (data[type] && data[type][newValue]) ? data[type][newValue] : [];
+  let index16 = arr32[3 + newValue];
 
-    for (let j = 0; j < counties.length; j += 1) {
-      if (!newClasses[counties[j]]) {
-        newClasses[counties[j]] = [type];
-        changes[counties[j]] = [type];
+  while (true) {
+    const alertId = arr16[index16];
+    const alertString = types[alertId - 1];
+    if (alertId === 0) {
+      break;
+    }
+    const length = arr16[index16 + 1];
+    index16 += 2;
+    for (let i = index16; i < index16 + length; i += 1) {
+      const county = arr16[i];
+      if (!newClasses[county]) {
+        // xxx: convert.
+        newClasses[county] = [alertString];
+        changes[county] = [alertString];
       } else {
-        newClasses[counties[j]].push(type);
-        changes[counties[j]].push(type);
+        newClasses[county].push(alertString);
+        changes[county].push(alertString);
       }
     }
+    index16 += length;
   }
 
   const changeKeys = Object.keys(changes);
   for (let i = 0; i < changeKeys.length; i += 1) {
-    const county = changeKeys[i];
-    const alertForMap = changes[county] ? changes[county][0] : '';
-    const previousAlertForMap = previous[county] ? previous[county][0] : '';
+    const countyId = changeKeys[i];
+    const countyString = `${countyId}`.padStart(5, '0');
+    const alertForMap = changes[countyId] ? changes[countyId][0] : '';
+    const previousAlertForMap = previous[countyId] ? previous[countyId][0] : '';
     if (ignorePreviousState || alertForMap !== previousAlertForMap) {
       const color = alertColors[alertForMap] || '#cccccc';
-      drawCounty(countyFeatures[county], color);
+      drawCounty(countyFeatures[countyString], color);
     }
   }
 
@@ -264,57 +280,21 @@ function drawBaseMap() {
   }
 }
 
-const files = [
-  '20180101',
-  '20180201',
-  '20180301',
-  '20180401',
-];
-
-let fileIndex = 0;
-
 function loadWeatherData() {
-  d3.json(
-    `data/counties-smol-${files[fileIndex]}.json`,
-    (error, counties) => {
-      if (error) {
-        throw error;
-      }
+  const req = new XMLHttpRequest();
+  req.open('GET', 'data/weather.dat', true);
+  req.responseType = 'arraybuffer';
 
-      const priorSteps =
-        (moment.utc(files[fileIndex], 'YYYYMMDD').valueOf() - min) / dataStep;
-      const countyKeys = Object.keys(counties);
-      for (let i = 0; i < countyKeys.length; i += 1) {
-        const county = counties[countyKeys[i]];
-        const runs = Object.keys(county);
-        for (let j = 0; j < runs.length; j += 1) {
-          const run = county[j];
-          let time = (run[0] + priorSteps) - 1;
-          const length = run[1];
-          const values = run[2];
+  req.onload = () => {
+    buffer = req.response;
+    if (buffer) {
+      arr32 = new Uint32Array(buffer, 0, (buffer.byteLength - (buffer.byteLength % 4)) / 4);
+      arr16 = new Uint16Array(buffer);
+      handleChange();
+    }
+  };
 
-          for (let k = 0; k < length; k += 1) {
-            time += 1;
-            for (let l = 0; l < values.length; l += 1) {
-              if (!data[values[l]]) {
-                data[values[l]] = [];
-              }
-              if (!data[values[l]][time]) {
-                data[values[l]][time] = [];
-              }
-              data[values[l]][time].push(countyKeys[i]);
-            }
-          }
-        }
-      }
-      fileIndex += 1;
-      if (fileIndex < files.length) {
-        loadWeatherData();
-      } else {
-        handleChange();
-      }
-    },
-  );
+  req.send();
 }
 
 function sizeCanvas() {
