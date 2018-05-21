@@ -25,7 +25,6 @@ let clicks16;
 const min = moment.utc('20180101', 'YYYYMMDD').valueOf();
 const max = moment.utc('20180501', 'YYYYMMDD').valueOf();
 const positionSteps = 1000;
-const countyElementLookup = {};
 const countyFeatures = {};
 
 const types = [
@@ -353,14 +352,6 @@ function loadMapData() {
 
       for (let i = 0; i < counties.length; i += 1) {
         countyFeatures[counties[i].id] = counties[i];
-      }
-
-      const keys = Object.keys(countyNames);
-      for (let i = 0; i < keys.length; i += 1) {
-        const element = document.getElementById(`county${keys[i]}`);
-        if (element) {
-          countyElementLookup[keys[i]] = element;
-        }
       }
 
       drawBaseMap();
