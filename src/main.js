@@ -1,7 +1,7 @@
 /* global d3: false, topojson: false */
 /* eslint-env browser */
+/* eslint no-use-before-define: ["error", "nofunc"] */
 const dataStep = 15 * 60 * 1000;
-
 // TODO(jdhollen): make this configurable.
 const step = 15 * 60 * 1000;
 
@@ -17,7 +17,6 @@ let pausedBeforeInputStarted = false;
 let slideInProgress = false;
 let scaleFactor = 1;
 let us = {};
-let buffer;
 let arr32;
 let arr16;
 let clicks16;
@@ -232,14 +231,14 @@ function handleSliderChangeEvent() {
   processSliderEvent();
 }
 
-function handleChange() {
+function maybeRunStep() {
   if (paused || currentTime >= max - dataStep) {
-    window.setTimeout(handleChange, 25);
+    window.setTimeout(maybeRunStep, 25);
     return;
   }
   currentTime += step;
   redraw();
-  window.setTimeout(handleChange, 25);
+  window.setTimeout(maybeRunStep, 25);
 }
 
 function handleMouseOver(e) {
@@ -289,37 +288,13 @@ function drawBaseMap() {
   context.stroke();
 }
 
-function loadClickMap() {
-  const req = new XMLHttpRequest();
-  req.open('GET', 'data/clicks.dat', true);
-  req.responseType = 'arraybuffer';
-
-  req.onload = () => {
-    buffer = req.response;
-    if (buffer) {
-      clicks16 = new Uint16Array(buffer);
-    }
-  };
-
-  req.send();
+function loadClickMap(buffer) {
+  clicks16 = new Uint16Array(buffer);
 }
 
-function loadWeatherData() {
-  const req = new XMLHttpRequest();
-  req.open('GET', 'data/weather.dat', true);
-  req.responseType = 'arraybuffer';
-
-  req.onload = () => {
-    buffer = req.response;
-    if (buffer) {
-      arr32 = new Uint32Array(buffer, 0, (buffer.byteLength - (buffer.byteLength % 4)) / 4);
-      arr16 = new Uint16Array(buffer);
-      handleChange();
-    }
-  };
-
-  req.send();
-  loadClickMap();
+function loadWeatherData(buffer) {
+  arr32 = new Uint32Array(buffer, 0, (buffer.byteLength - (buffer.byteLength % 4)) / 4);
+  arr16 = new Uint16Array(buffer);
 }
 
 function sizeCanvas() {
@@ -346,58 +321,60 @@ function handlePlayPauseClick() {
   paused = !paused;
 }
 
-// TODO(jdhollen): move everything below here to an onload event.
-function loadMapData() {
-  d3.json(
-    'data/10m.json',
-    (error, usData) => {
-      if (error) {
-        throw error;
-      }
-      us = usData;
-      const counties = topojson.feature(us, us.objects.counties).features;
+function loadMapData(usData) {
+  us = usData;
+  const counties = topojson.feature(us, us.objects.counties).features;
 
-      for (let i = 0; i < counties.length; i += 1) {
-        countyFeatures[counties[i].id] = counties[i];
-      }
+  for (let i = 0; i < counties.length; i += 1) {
+    countyFeatures[counties[i].id] = counties[i];
+  }
 
-      drawBaseMap();
-      loadWeatherData();
-    },
-  );
+  drawBaseMap();
 }
 
-function loadCountyNames() {
-  d3.json(
-    'data/county-names.json',
-    (error, names) => {
-      if (error) {
-        throw error;
-      }
-      countyNames = names;
-      loadMapData();
-    },
-  );
+if (checkFetchAndPromiseSupport()) {
+  main();
+} else {
+  loadPolyfills(main);
 }
 
-d3.json(
-  'data/alert-names.json',
-  (error, names) => {
-    if (error) {
-      throw error;
-    }
-    alertNames = names;
-    loadCountyNames();
-  },
-);
+function getJson(r) {
+  return r.json();
+}
 
-document.getElementById('slider').addEventListener('change', handleSliderChangeEvent);
-document.getElementById('slider').addEventListener('input', handleSliderInputEvent);
-document.getElementById('playPause').addEventListener('click', handlePlayPauseClick);
+function getBuf(r) {
+  return r.arrayBuffer();
+}
 
-window.addEventListener('resize', sizeCanvas);
-window.addEventListener('orientationchange', sizeCanvas);
-canvas.addEventListener('mouseover', handleMouseOver);
-canvas.addEventListener('mousemove', handleMouseOver);
-canvas.addEventListener('mouseout', handleMouseOut);
-sizeCanvas();
+function main() {
+  const weather = fetch('data/weather.dat').then(getBuf).then(b => loadWeatherData(b));
+  const clicks = fetch('data/clicks.dat').then(getBuf).then(b => loadClickMap(b));
+  const alerts = fetch('data/alert-names.json').then(getJson).then((j) => { alertNames = j; });
+  const counties = fetch('data/county-names.json').then(getJson).then((j) => { countyNames = j; });
+  const map = fetch('data/10m.json').then(getJson).then(j => loadMapData(j));
+
+  document.getElementById('slider').addEventListener('change', handleSliderChangeEvent);
+  document.getElementById('slider').addEventListener('input', handleSliderInputEvent);
+  document.getElementById('playPause').addEventListener('click', handlePlayPauseClick);
+
+  window.addEventListener('resize', sizeCanvas);
+  window.addEventListener('orientationchange', sizeCanvas);
+  canvas.addEventListener('mouseover', handleMouseOver);
+  canvas.addEventListener('mousemove', handleMouseOver);
+  canvas.addEventListener('mouseout', handleMouseOut);
+  sizeCanvas();
+
+  Promise.all([weather, clicks, alerts, counties, map]).then(() => maybeRunStep());
+}
+
+function loadPolyfills(callback) {
+  const script = document.createElement('script');
+  script.src = 'https://cdn.polyfill.io/v2/polyfill.min.js?features=fetch';
+  script.onload = () => { callback(); };
+  script.onerror = () => { callback(new Error('failed to load polyfills')); };
+  document.head.appendChild(script);
+}
+
+function checkFetchAndPromiseSupport() {
+  return window.Promise && window.fetch;
+}
