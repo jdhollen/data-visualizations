@@ -126,7 +126,7 @@ function refreshHoverText() {
   // TODO(jdhollen): flush out all missing names + fix.
   const stateName = countyNames[`${selectedCounty.substring(0, 2)}000`];
   const fullName = `${countyNames[selectedCounty]}, ${stateName}`;
-  const classes = previous[selectedCounty] || [];
+  const classes = previous[Number(selectedCounty)] || [];
 
   let alerts = '';
   for (let i = 0; i < classes.length; i += 1) {
