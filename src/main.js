@@ -179,7 +179,6 @@ function redraw(ignorePreviousState) {
     for (let i = index16; i < index16 + length; i += 1) {
       const county = arr16[i];
       if (!newClasses[county]) {
-        // xxx: convert.
         newClasses[county] = [alertString];
         changes[county] = [alertString];
       } else {
