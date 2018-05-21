@@ -21,6 +21,8 @@ let buffer;
 let arr32;
 let arr16;
 let clicks16;
+let meshed;
+let nation;
 
 const min = 1514764800000;
 const max = 1525132800000;
@@ -269,15 +271,21 @@ function drawBaseMap() {
   if (!us.objects) {
     return;
   }
+  if (!meshed) {
+    meshed = topojson.mesh(us);
+  }
+  if (!nation) {
+    nation = topojson.feature(us, us.objects.nation);
+  }
   context.beginPath();
   context.fillStyle = '#cccccc';
-  canvasPath(topojson.feature(us, us.objects.nation));
+  canvasPath(nation);
   context.fill();
 
   context.beginPath();
   context.strokeStyle = '#ffffff';
   context.lineWidth = 0.5;
-  canvasPath(topojson.mesh(us));
+  canvasPath(meshed);
   context.stroke();
 }
 
