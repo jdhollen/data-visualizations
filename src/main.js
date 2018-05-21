@@ -328,6 +328,8 @@ function loadMapData(usData) {
   for (let i = 0; i < counties.length; i += 1) {
     countyFeatures[counties[i].id] = counties[i];
   }
+
+  drawBaseMap();
 }
 
 if (checkFetchAndPromiseSupport()) {
@@ -362,10 +364,7 @@ function main() {
   canvas.addEventListener('mouseout', handleMouseOut);
   sizeCanvas();
 
-  Promise.all([weather, clicks, alerts, counties, map]).then(() => {
-    drawBaseMap();
-    handleChange();
-  });
+  Promise.all([weather, clicks, alerts, counties, map]).then(() => handleChange());
 }
 
 function loadPolyfills(callback) {
