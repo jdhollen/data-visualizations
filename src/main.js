@@ -231,14 +231,14 @@ function handleSliderChangeEvent() {
   processSliderEvent();
 }
 
-function handleChange() {
+function maybeRunStep() {
   if (paused || currentTime >= max - dataStep) {
-    window.setTimeout(handleChange, 25);
+    window.setTimeout(maybeRunStep, 25);
     return;
   }
   currentTime += step;
   redraw();
-  window.setTimeout(handleChange, 25);
+  window.setTimeout(maybeRunStep, 25);
 }
 
 function handleMouseOver(e) {
@@ -364,7 +364,7 @@ function main() {
   canvas.addEventListener('mouseout', handleMouseOut);
   sizeCanvas();
 
-  Promise.all([weather, clicks, alerts, counties, map]).then(() => handleChange());
+  Promise.all([weather, clicks, alerts, counties, map]).then(() => maybeRunStep());
 }
 
 function loadPolyfills(callback) {
