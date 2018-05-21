@@ -30,6 +30,7 @@ const positionSteps = 1000;
 const countyFeatures = {};
 
 const types = [
+  'NONE',
   'RH', 'VO', 'AF', 'TS', 'TO', 'HU', 'TY', 'EW', 'HF', 'HI', 'TR', 'SV', 'BZ',
   'SQ', 'WS', 'DS', 'WW', 'IS', 'LB', 'LE', 'HS', 'HP', 'FF', 'SB', 'SN', 'BS',
   'IP', 'ZR', 'SR', 'GL', 'TI', 'SM', 'AV', 'DU', 'CF', 'LS', 'FA', 'FL', 'HY',
@@ -170,7 +171,7 @@ function redraw(ignorePreviousState) {
 
   while (true) {
     const alertId = arr16[index16];
-    const alertString = types[alertId - 1];
+    const alertString = types[alertId];
     if (alertId === 0) {
       break;
     }
