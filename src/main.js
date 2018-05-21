@@ -1,4 +1,4 @@
-/* global d3: false, topojson: false, moment: false */
+/* global d3: false, topojson: false */
 /* eslint-env browser */
 const dataStep = 15 * 60 * 1000;
 
@@ -22,8 +22,8 @@ let arr32;
 let arr16;
 let clicks16;
 
-const min = moment.utc('20180101', 'YYYYMMDD').valueOf();
-const max = moment.utc('20180501', 'YYYYMMDD').valueOf();
+const min = 1514764800000;
+const max = 1525132800000;
 const positionSteps = 1000;
 const countyFeatures = {};
 
@@ -99,8 +99,7 @@ const alertColors = {
   ZR: 'cyan',
 };
 
-// TODO(jdhollen): kill moment dep, totally unneeded.
-let currentTime = moment.utc('20180101', 'YYYYMMDD').valueOf();
+let currentTime = min;
 
 function timeToPosition() {
   if (currentTime <= min) {
