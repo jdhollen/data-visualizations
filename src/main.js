@@ -195,7 +195,6 @@ function redraw(ignorePreviousState) {
   for (let i = 0; i < changeKeys.length; i += 1) {
     const countyId = changeKeys[i];
     const countyString = countyId < 10000 ? `0${countyId}` : countyId;
-    
     const alertForMap = changes[countyId] ? changes[countyId][0] : '';
     const previousAlertForMap = previous[countyId] ? previous[countyId][0] : '';
     if (ignorePreviousState || alertForMap !== previousAlertForMap) {
