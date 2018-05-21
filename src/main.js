@@ -257,7 +257,6 @@ function drawBaseMap() {
   if (!us.objects) {
     return;
   }
-  const counties = topojson.feature(us, us.objects.counties).features;
   context.beginPath();
   context.fillStyle = '#cccccc';
   canvasPath(topojson.feature(us, us.objects.nation));
@@ -268,19 +267,6 @@ function drawBaseMap() {
   context.lineWidth = 0.5;
   canvasPath(topojson.mesh(us));
   context.stroke();
-
-  // TODO(jdhollen): just stamp the whole country instead.
-  for (let i = 0; i < counties.length; i += 1) {
-    countyFeatures[counties[i].id] = counties[i];
-  }
-
-  const keys = Object.keys(countyNames);
-  for (let i = 0; i < keys.length; i += 1) {
-    const element = document.getElementById(`county${keys[i]}`);
-    if (element) {
-      countyElementLookup[keys[i]] = element;
-    }
-  }
 }
 
 function loadWeatherData() {
@@ -331,14 +317,28 @@ function loadMapData() {
   d3.json(
     'data/10m.json',
     (error, usData) => {
-      us = usData;
       if (error) {
         throw error;
       }
+      us = usData;
+      const counties = topojson.feature(us, us.objects.counties).features;
+
+      for (let i = 0; i < counties.length; i += 1) {
+        countyFeatures[counties[i].id] = counties[i];
+      }
+
+      const keys = Object.keys(countyNames);
+      for (let i = 0; i < keys.length; i += 1) {
+        const element = document.getElementById(`county${keys[i]}`);
+        if (element) {
+          countyElementLookup[keys[i]] = element;
+        }
+      }
+
       svg.append('g')
         .attr('class', 'counties')
         .selectAll('path')
-        .data(topojson.feature(us, us.objects.counties).features)
+        .data(counties)
         .enter()
         .append('path')
         .attr('id', d => d.id)
