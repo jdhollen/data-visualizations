@@ -1,5 +1,6 @@
 /* global d3: false, topojson: false */
 /* eslint-env browser */
+/* eslint no-use-before-define: ["error", "nofunc"] */
 const dataStep = 15 * 60 * 1000;
 
 // TODO(jdhollen): make this configurable.
@@ -346,6 +347,8 @@ function handlePlayPauseClick() {
   paused = !paused;
 }
 
+fetch('data/10m.json', )
+
 // TODO(jdhollen): move everything below here to an onload event.
 function loadMapData() {
   d3.json(
@@ -401,3 +404,25 @@ canvas.addEventListener('mouseover', handleMouseOver);
 canvas.addEventListener('mousemove', handleMouseOver);
 canvas.addEventListener('mouseout', handleMouseOut);
 sizeCanvas();
+
+if (checkFetchAndPromiseSupport()) {
+  main();
+} else {
+  loadPolyfills(main);
+}
+
+function loadPolyfills(callback) {
+  const script = document.createElement('script');
+  script.src = 'https://cdn.polyfill.io/v2/polyfill.min.js?features=fetch';
+  script.onload = () => { callback(); };
+  script.onerror = () => { callback(new Error('failed to load polyfills')); };
+  document.head.appendChild(script);
+}
+
+function checkFetchAndPromiseSupport() {
+  return window.Promise && window.fetch;
+}
+
+function main() {
+  sizeCanvas();
+}
