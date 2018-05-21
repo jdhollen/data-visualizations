@@ -1,6 +1,7 @@
 /* global d3: false, topojson: false */
 /* eslint-env browser */
 /* eslint no-use-before-define: ["error", "nofunc"] */
+/* eslint no-bitwise: ["error", { "allow": ["&", "|"] }] */
 const dataStep = 15 * 60 * 1000;
 // TODO(jdhollen): make this configurable.
 const step = 15 * 60 * 1000;
@@ -28,13 +29,20 @@ const max = 1525132800000;
 const positionSteps = 1000;
 const countyFeatures = {};
 
+const typeBits = {
+  0x8000: 'Warning',
+  0x4000: 'Advisory',
+  0x2000: 'Watch',
+  0x1000: 'Statement',
+};
+
 const types = [
   'NONE',
   'RH', 'VO', 'AF', 'TS', 'TO', 'HU', 'TY', 'EW', 'HF', 'HI', 'TR', 'SV', 'BZ',
   'SQ', 'WS', 'DS', 'WW', 'IS', 'LB', 'LE', 'HS', 'HP', 'FF', 'SB', 'SN', 'BS',
   'IP', 'ZR', 'SR', 'GL', 'TI', 'SM', 'AV', 'DU', 'CF', 'LS', 'FA', 'FL', 'HY',
   'ZF', 'FG', 'FW', 'HW', 'WI', 'EC', 'EH', 'HZ', 'HT', 'FZ', 'LW', 'WC', 'UP',
-  'SE', 'SU', 'BH', 'LO', 'MA', 'SC', 'SI', 'RB', 'FR', 'AS'];
+  'SE', 'SU', 'BH', 'LO', 'MA', 'SC', 'SI', 'RB', 'FR', 'AS', 'RP'];
 
 const alertColors = {
   SV: 'orange',
@@ -78,6 +86,7 @@ const alertColors = {
   LW: 'thistle',
   RB: 'thistle',
   RH: 'red',
+  RP: 'forestgreen',
   SB: 'blue',
   SC: 'thistle',
   SE: 'thistle',
@@ -132,9 +141,12 @@ function refreshHoverText() {
 
   let alerts = '';
   for (let i = 0; i < classes.length; i += 1) {
-    const alert = alertNames[classes[i]];
+    const av = classes[i];
+    const alertId = av & 0xff;
+    const alertType = av & 0xff00;
+    const alert = alertNames[types[alertId]];
     if (alert) {
-      alerts = alerts.concat(` ${alert}`);
+      alerts = alerts.concat(` ${alert} ${typeBits[alertType]}`);
     }
   }
   if (!alerts) {
@@ -169,8 +181,8 @@ function redraw(ignorePreviousState) {
   let index16 = arr32[3 + newValue];
 
   while (true) {
-    const alertId = arr16[index16];
-    const alertString = types[alertId];
+    const av = arr16[index16];
+    const alertId = av & 0xff;
     if (alertId === 0) {
       break;
     }
@@ -179,11 +191,11 @@ function redraw(ignorePreviousState) {
     for (let i = index16; i < index16 + length; i += 1) {
       const county = arr16[i];
       if (!newClasses[county]) {
-        newClasses[county] = [alertString];
-        changes[county] = [alertString];
+        newClasses[county] = [av];
+        changes[county] = [av];
       } else {
-        newClasses[county].push(alertString);
-        changes[county].push(alertString);
+        newClasses[county].push(av);
+        changes[county].push(av);
       }
     }
     index16 += length;
@@ -196,7 +208,7 @@ function redraw(ignorePreviousState) {
     const alertForMap = changes[countyId] ? changes[countyId][0] : '';
     const previousAlertForMap = previous[countyId] ? previous[countyId][0] : '';
     if (ignorePreviousState || alertForMap !== previousAlertForMap) {
-      const color = alertColors[alertForMap] || '#cccccc';
+      const color = alertColors[types[alertForMap & 0xff]] || '#cccccc';
       drawCounty(countyFeatures[countyString], color);
     }
   }
@@ -347,7 +359,7 @@ function getBuf(r) {
 }
 
 function main() {
-  const weather = fetch('data/weather.dat').then(getBuf).then(b => loadWeatherData(b));
+  const weather = fetch('data/weather-type.dat').then(getBuf).then(b => loadWeatherData(b));
   const clicks = fetch('data/clicks.dat').then(getBuf).then(b => loadClickMap(b));
   const alerts = fetch('data/alert-names.json').then(getJson).then((j) => { alertNames = j; });
   const counties = fetch('data/county-names.json').then(getJson).then((j) => { countyNames = j; });
