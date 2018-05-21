@@ -1,8 +1,5 @@
 /* global d3: false, topojson: false, moment: false */
 /* eslint-env browser */
-
-const svg = d3.select('#svg');
-const path = d3.geoPath();
 const dataStep = 15 * 60 * 1000;
 
 // TODO(jdhollen): make this configurable.
@@ -23,6 +20,7 @@ let us = {};
 let buffer;
 let arr32;
 let arr16;
+let clicks16;
 
 const min = moment.utc('20180101', 'YYYYMMDD').valueOf();
 const max = moment.utc('20180501', 'YYYYMMDD').valueOf();
@@ -102,6 +100,7 @@ const alertColors = {
   ZR: 'cyan',
 };
 
+// TODO(jdhollen): kill moment dep, totally unneeded.
 let currentTime = moment.utc('20180101', 'YYYYMMDD').valueOf();
 
 function timeToPosition() {
@@ -243,8 +242,23 @@ function handleChange() {
   window.setTimeout(handleChange, 25);
 }
 
-function handleMouseOver(d) {
-  selectedCounty = d.id;
+function handleMouseOver(e) {
+  const rect = canvas.getBoundingClientRect();
+  const offsetTop = rect.top + document.body.scrollTop;
+  const offsetLeft = rect.left + document.body.scrollLeft;
+
+  const ratio = 1 / (canvas.width / (960 * devicePixelRatio));
+  const x = Math.floor(ratio * (e.clientX - offsetLeft));
+  const y = Math.floor(ratio * (e.clientY - offsetTop));
+
+  if (clicks16) {
+    const id = clicks16[(x * 600) + y];
+    if (id > 0) {
+      selectedCounty = id < 10000 ? `0${id}` : `${id}`;
+    } else {
+      selectedCounty = '';
+    }
+  }
   refreshHoverText();
 }
 
@@ -269,6 +283,21 @@ function drawBaseMap() {
   context.stroke();
 }
 
+function loadClickMap() {
+  const req = new XMLHttpRequest();
+  req.open('GET', 'data/clicks.dat', true);
+  req.responseType = 'arraybuffer';
+
+  req.onload = () => {
+    buffer = req.response;
+    if (buffer) {
+      clicks16 = new Uint16Array(buffer);
+    }
+  };
+
+  req.send();
+}
+
 function loadWeatherData() {
   const req = new XMLHttpRequest();
   req.open('GET', 'data/weather.dat', true);
@@ -284,6 +313,7 @@ function loadWeatherData() {
   };
 
   req.send();
+  loadClickMap();
 }
 
 function sizeCanvas() {
@@ -300,8 +330,6 @@ function sizeCanvas() {
   context.strokeStyle = '#ffffff';
   context.lineWidth = 0.5;
   context.scale(devicePixelRatio * scaleFactor, devicePixelRatio * scaleFactor);
-  svg.attr('width', width);
-  svg.attr('height', height);
   if (us) {
     drawBaseMap();
     redraw(true);
@@ -334,17 +362,6 @@ function loadMapData() {
           countyElementLookup[keys[i]] = element;
         }
       }
-
-      svg.append('g')
-        .attr('class', 'counties')
-        .selectAll('path')
-        .data(counties)
-        .enter()
-        .append('path')
-        .attr('id', d => d.id)
-        .on('mouseover', handleMouseOver)
-        .on('mouseout', handleMouseOut)
-        .attr('d', path);
 
       drawBaseMap();
       loadWeatherData();
@@ -382,4 +399,7 @@ document.getElementById('playPause').addEventListener('click', handlePlayPauseCl
 
 window.addEventListener('resize', sizeCanvas);
 window.addEventListener('orientationchange', sizeCanvas);
+canvas.addEventListener('mouseover', handleMouseOver);
+canvas.addEventListener('mousemove', handleMouseOver);
+canvas.addEventListener('mouseout', handleMouseOut);
 sizeCanvas();
