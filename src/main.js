@@ -195,6 +195,7 @@ function redraw(ignorePreviousState) {
   for (let i = 0; i < changeKeys.length; i += 1) {
     const countyId = changeKeys[i];
     const countyString = countyId < 10000 ? `0${countyId}` : countyId;
+    
     const alertForMap = changes[countyId] ? changes[countyId][0] : '';
     const previousAlertForMap = previous[countyId] ? previous[countyId][0] : '';
     if (ignorePreviousState || alertForMap !== previousAlertForMap) {
@@ -258,6 +259,10 @@ function drawBaseMap() {
     return;
   }
   const counties = topojson.feature(us, us.objects.counties).features;
+  context.beginPath();
+  context.fillStyle = '#cccccc';
+  canvasPath(topojson.feature(us, us.objects.nation));
+  context.fill();
 
   context.beginPath();
   context.strokeStyle = '#ffffff';
@@ -268,7 +273,6 @@ function drawBaseMap() {
   // TODO(jdhollen): just stamp the whole country instead.
   for (let i = 0; i < counties.length; i += 1) {
     countyFeatures[counties[i].id] = counties[i];
-    drawCounty(counties[i], '#ccc');
   }
 
   const keys = Object.keys(countyNames);
