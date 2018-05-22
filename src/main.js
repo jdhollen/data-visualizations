@@ -21,6 +21,8 @@ let arr16;
 let clicks16;
 let meshed;
 let nation;
+let speed = 2;
+let stepDelay = 24; // or 48, or 96.
 let stepMultiplier = 1;
 
 const min = 1514764800000;
@@ -283,13 +285,13 @@ function handleSliderChangeEvent() {
 
 function maybeRunStep() {
   if (paused || currentTime >= max - dataStep) {
-    window.setTimeout(maybeRunStep, 25);
+    window.setTimeout(maybeRunStep, stepDelay);
     return;
   }
   currentTime += (stepMultiplier * dataStep);
   currentTime = Math.min(currentTime, max - dataStep);
   redraw();
-  window.setTimeout(maybeRunStep, 25);
+  window.setTimeout(maybeRunStep, stepDelay);
 }
 
 function handleMouseOver(e) {
@@ -391,12 +393,32 @@ function handleForwardClick() {
 }
 
 function handleSpeedClick() {
-  if (stepMultiplier === 1) {
-    stepMultiplier = 2;
-  } else if (stepMultiplier === 2) {
-    stepMultiplier = 4;
-  } else {
-    stepMultiplier = 1;
+  speed = (speed + 1) % 5;
+  switch (speed) {
+    case 0:
+      stepDelay = 96;
+      stepMultiplier = 1;
+      break;
+    case 1:
+      stepDelay = 48;
+      stepMultiplier = 1;
+      break;
+    case 2:
+      stepDelay = 24;
+      stepMultiplier = 1;
+      break;
+    case 3:
+      stepDelay = 24;
+      stepMultiplier = 2;
+      break;
+    case 4:
+      stepDelay = 24;
+      stepMultiplier = 4;
+      break;
+    default:
+      stepDelay = 24;
+      stepMultiplier = 1;
+      break;
   }
 
   const numSteps = (max - min) / dataStep;
