@@ -3,8 +3,6 @@
 /* eslint no-use-before-define: ['error', 'nofunc'] */
 /* eslint no-bitwise: ['error', { 'allow': ['&', '|'] }] */
 const dataStep = 15 * 60 * 1000;
-// TODO(jdhollen): make this configurable.
-const step = 15 * 60 * 1000;
 
 const context = d3.select('canvas').node().getContext('2d');
 const canvas = document.getElementById('map');
@@ -23,6 +21,7 @@ let arr16;
 let clicks16;
 let meshed;
 let nation;
+let stepMultiplier = 1;
 
 const min = 1514764800000;
 const max = 1525132800000;
@@ -262,7 +261,7 @@ function processSliderEvent() {
   const newValue = document.getElementById('slider').value;
   const stepSize = Math.floor((max - dataStep - min) / positionSteps);
   // TODO(jdhollen): round instead of floor here.
-  const offset = (stepSize * newValue) - ((stepSize * newValue) % step);
+  const offset = (stepSize * newValue) - ((stepSize * newValue) % (stepMultiplier * dataStep));
   currentTime = min + offset;
   redraw();
 }
@@ -287,7 +286,8 @@ function maybeRunStep() {
     window.setTimeout(maybeRunStep, 25);
     return;
   }
-  currentTime += step;
+  currentTime += (stepMultiplier * dataStep);
+  currentTime = Math.min(currentTime, max - dataStep);
   redraw();
   window.setTimeout(maybeRunStep, 25);
 }
@@ -390,6 +390,24 @@ function handleForwardClick() {
   redraw();
 }
 
+function handleSpeedClick() {
+  if (stepMultiplier === 1) {
+    stepMultiplier = 2;
+  } else if (stepMultiplier === 2) {
+    stepMultiplier = 4;
+  } else {
+    stepMultiplier = 1;
+  }
+
+  const numSteps = (max - min) / dataStep;
+  let currentSteps = (currentTime - min) / dataStep;
+  currentSteps += (currentSteps % stepMultiplier);
+  currentSteps = Math.min(numSteps - 1, currentSteps);
+  currentTime = min + (currentSteps * dataStep);
+
+  redraw();
+}
+
 function loadMapData(usData) {
   us = usData;
   const counties = topojson.feature(us, us.objects.counties).features;
@@ -427,6 +445,7 @@ function main() {
   document.getElementById('playPause').addEventListener('click', handlePlayPauseClick);
   document.getElementById('oneForward').addEventListener('click', handleForwardClick);
   document.getElementById('oneBackward').addEventListener('click', handleBackwardClick);
+  document.getElementById('speed').addEventListener('click', handleSpeedClick);
 
   window.addEventListener('resize', sizeCanvas);
   window.addEventListener('orientationchange', sizeCanvas);
