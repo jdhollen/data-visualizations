@@ -443,6 +443,12 @@ function handleRewindClick() {
   paused = !rewind;
 }
 
+function handleResetClick() {
+  currentTime = min;
+  rewind = false;
+  paused = false;
+}
+
 function loadMapData(usData) {
   us = usData;
   const counties = topojson.feature(us, us.objects.counties).features;
@@ -482,6 +488,7 @@ function main() {
   document.getElementById('oneBackward').addEventListener('click', handleBackwardClick);
   document.getElementById('speed').addEventListener('click', handleSpeedClick);
   document.getElementById('rewind').addEventListener('click', handleRewindClick);
+  document.getElementById('reset').addEventListener('click', handleResetClick);
 
   window.addEventListener('resize', sizeCanvas);
   window.addEventListener('orientationchange', sizeCanvas);
