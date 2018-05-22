@@ -24,6 +24,7 @@ let nation;
 let speed = 2;
 let stepDelay = 24; // or 48, or 96.
 let stepMultiplier = 1;
+let rewind = false;
 
 const min = 1514764800000;
 const max = 1525132800000;
@@ -284,12 +285,12 @@ function handleSliderChangeEvent() {
 }
 
 function maybeRunStep() {
-  if (paused || currentTime >= max - dataStep) {
+  if (paused || (!rewind && currentTime >= max - dataStep) || (rewind && currentTime <= min)) {
     window.setTimeout(maybeRunStep, stepDelay);
     return;
   }
-  currentTime += (stepMultiplier * dataStep);
-  currentTime = Math.min(currentTime, max - dataStep);
+  currentTime += (stepMultiplier * dataStep) * (rewind ? -1 : 1);
+  currentTime = Math.max(min, Math.min(currentTime, max - dataStep));
   redraw();
   window.setTimeout(maybeRunStep, stepDelay);
 }
@@ -371,6 +372,7 @@ function sizeCanvas() {
 }
 
 function handlePlayPauseClick() {
+  rewind = false;
   paused = !paused;
 }
 
@@ -378,6 +380,7 @@ function handleBackwardClick() {
   if (currentTime === min) {
     return;
   }
+  rewind = false;
   paused = true;
   currentTime -= dataStep;
   redraw();
@@ -387,6 +390,7 @@ function handleForwardClick() {
   if (currentTime === max - dataStep) {
     return;
   }
+  rewind = false;
   paused = true;
   currentTime += dataStep;
   redraw();
@@ -430,6 +434,15 @@ function handleSpeedClick() {
   redraw();
 }
 
+function handleRewindClick() {
+  if (currentTime <= min) {
+    rewind = false;
+    return;
+  }
+  rewind = !rewind;
+  paused = !rewind;
+}
+
 function loadMapData(usData) {
   us = usData;
   const counties = topojson.feature(us, us.objects.counties).features;
@@ -468,6 +481,7 @@ function main() {
   document.getElementById('oneForward').addEventListener('click', handleForwardClick);
   document.getElementById('oneBackward').addEventListener('click', handleBackwardClick);
   document.getElementById('speed').addEventListener('click', handleSpeedClick);
+  document.getElementById('rewind').addEventListener('click', handleRewindClick);
 
   window.addEventListener('resize', sizeCanvas);
   window.addEventListener('orientationchange', sizeCanvas);
