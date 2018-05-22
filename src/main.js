@@ -372,6 +372,24 @@ function handlePlayPauseClick() {
   paused = !paused;
 }
 
+function handleBackwardClick() {
+  if (currentTime === min) {
+    return;
+  }
+  paused = true;
+  currentTime -= dataStep;
+  redraw();
+}
+
+function handleForwardClick() {
+  if (currentTime === max - dataStep) {
+    return;
+  }
+  paused = true;
+  currentTime += dataStep;
+  redraw();
+}
+
 function loadMapData(usData) {
   us = usData;
   const counties = topojson.feature(us, us.objects.counties).features;
@@ -407,6 +425,8 @@ function main() {
   document.getElementById('slider').addEventListener('change', handleSliderChangeEvent);
   document.getElementById('slider').addEventListener('input', handleSliderInputEvent);
   document.getElementById('playPause').addEventListener('click', handlePlayPauseClick);
+  document.getElementById('oneForward').addEventListener('click', handleForwardClick);
+  document.getElementById('oneBackward').addEventListener('click', handleBackwardClick);
 
   window.addEventListener('resize', sizeCanvas);
   window.addEventListener('orientationchange', sizeCanvas);
