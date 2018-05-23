@@ -442,7 +442,7 @@ function sizeCanvas() {
   canvas.width = devicePixelRatio * width;
   canvas.height = devicePixelRatio * height;
   svg.attr('width', width);
-  svg.attr('height', height)
+  svg.attr('height', height);
   scaleFactor = width / 960;
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.strokeStyle = '#ffffff';
