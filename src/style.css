@@ -98,9 +98,10 @@ p {
 .legendItem {
   display: inline-block;
   padding: 5px 20px 5px 0px;
-  min-width: 160px;
+  width: 160px;
   white-space: nowrap;
   overflow: hidden;
+  vertical-align: top;
 }
 
 .legendTitle {
@@ -108,6 +109,7 @@ p {
   display: inline-block;
   font-weight: bold;
   padding: 5px 0;
+  vertical-align: top;
 }
 
 
