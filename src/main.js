@@ -382,9 +382,7 @@ function sizeCanvas() {
 }
 
 function handlePlayPauseResetClick() {
-  console.log('uh');
   if (currentTime >= max - dataStep) {
-    console.log('um');
     currentTime = min;
     rewind = false;
     paused = false;
