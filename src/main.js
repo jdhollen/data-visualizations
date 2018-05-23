@@ -270,7 +270,10 @@ function processSliderEvent() {
 }
 
 function refreshButtonState() {
-  if ((slideInProgress && pausedBeforeInputStarted) || (!slideInProgress && paused)) {
+  // TODO(jdhollen): hold refs to buttons.
+  if (currentTime >= max - dataStep) {
+    document.getElementById('playPause').className = 'reset';
+  } else if ((slideInProgress && pausedBeforeInputStarted) || (!slideInProgress && paused)) {
     document.getElementById('playPause').className = 'play';
   } else {
     document.getElementById('playPause').className = 'pause';
@@ -295,6 +298,7 @@ function handleSliderChangeEvent() {
 }
 
 function maybeRunStep() {
+  refreshButtonState();
   if (paused || (!rewind && currentTime >= max - dataStep) || (rewind && currentTime <= min)) {
     window.setTimeout(maybeRunStep, stepDelay);
     return;
@@ -390,8 +394,6 @@ function handlePlayPauseResetClick() {
     rewind = false;
     paused = !paused;
   }
-
-  refreshButtonState();
 }
 
 function handleBackwardClick() {
@@ -402,7 +404,6 @@ function handleBackwardClick() {
   paused = true;
   currentTime -= dataStep;
   redraw();
-  refreshButtonState();
 }
 
 function handleForwardClick() {
@@ -413,7 +414,6 @@ function handleForwardClick() {
   paused = true;
   currentTime += dataStep;
   redraw();
-  refreshButtonState();
 }
 
 function handleSpeedClick() {
@@ -452,7 +452,6 @@ function handleSpeedClick() {
   currentTime = min + (currentSteps * dataStep);
 
   redraw();
-  refreshButtonState();
 }
 
 function handleRewindClick() {
@@ -462,7 +461,6 @@ function handleRewindClick() {
   }
   rewind = !rewind;
   paused = !rewind;
-  refreshButtonState();
 }
 
 function loadMapData(usData) {
