@@ -9,6 +9,7 @@ const path = d3.geoPath();
 const context = d3.select('canvas').node().getContext('2d');
 const canvas = document.getElementById('map');
 const canvasPath = d3.geoPath().context(context);
+const lowerLegend = document.getElementById('lowerLegend');
 let countyNames = {};
 let alertNames = {};
 let selectedCounty = 0;
@@ -174,12 +175,8 @@ function timeToPosition() {
 }
 
 function refreshHoverText() {
-  const el = document.getElementById('hoverText');
-  if (!el) {
-    return;
-  }
   if (!selectedCounty) {
-    el.textContent = '';
+    lowerLegend.innerHTML = '<div class="legendTitle">Select a county to see alerts.</div>';
     return;
   }
 
@@ -194,15 +191,16 @@ function refreshHoverText() {
     const alertId = av & 0xff;
     const alertType = av & 0xff00;
     const alert = alertNames[types[alertId]];
+    const alertColor = alertColors[`${types[alertId]}${letterBits[alertType]}`];
     if (alert) {
-      alerts = alerts.concat(` ${alert} ${typeBits[alertType]}`);
+      alerts = alerts.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert} ${typeBits[alertType]}</div>`);
     }
   }
   if (!alerts) {
     alerts = 'No alerts';
   }
 
-  el.textContent = `${fullName}: ${alerts}`;
+  lowerLegend.innerHTML = `<div class="legendTitle">${fullName}</div> ${alerts}`;
 }
 
 function drawCounty(county, fillStyle) {

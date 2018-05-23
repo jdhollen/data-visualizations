@@ -64,8 +64,8 @@ p {
 }
 
 .footer {
-  min-height: 2em;
   width: 100%;
+  padding-bottom: 0.5em;
 }
 
 .buttonBar {
@@ -74,11 +74,60 @@ p {
 }
 
 .timeDisplay {
-  margin-left: 1em;
+  margin-left: 2.5em;
   display: inline-block;
   font-size: 0.9em;
   font-weight: bold;
-  min-width: 160px;
+  min-width: 140px;
+  margin-top: 0.5em;
+}
+
+.playbackControls {
+  box-sizing:border-box;
+  padding: 0 1em;
+  position:relative;
+  width:100%;
+}
+
+@media (max-width: 862px) {
+  .block {
+    border-width: 1px 0;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    margin: 0 auto;
+  }
+
+  .block {
+    margin: 0 0 1em 0;
+  }
+
+  .footer {
+    white-space:nowrap;
+    overflow:hidden;
+  }
+
+  .playbackControls {
+    width: 190px;
+    height: 36px;
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 auto;
+    padding: 0 0 0 10px;
+  }
+  .rangeContainer {
+    display: none;
+  }
+  .rangeInput {
+    display: none;
+  }
+  .timeDisplay {
+    vertical-align: middle;
+    margin: 0 auto;
+    padding-left: 15px;
+  }
 }
 
 .rangeInput {
@@ -247,13 +296,6 @@ p {
   width:100%;
   height:100%;
   background-position:center;
-}
-
-.playbackControls {
-  box-sizing:border-box;
-  padding: 0 1em;
-  position:relative;
-  width:100%;
 }
 
 .legendItem {
