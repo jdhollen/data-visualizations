@@ -4,6 +4,8 @@
 /* eslint no-bitwise: ['error', { 'allow': ['&', '|'] }] */
 const dataStep = 15 * 60 * 1000;
 
+const svg = d3.select('#svg');
+const path = d3.geoPath();
 const context = d3.select('canvas').node().getContext('2d');
 const canvas = document.getElementById('map');
 const canvasPath = d3.geoPath().context(context);
@@ -261,10 +263,10 @@ function redraw(ignorePreviousState) {
   }
 
   if (clickedCounty) {
-    const alertForMap = changes[clickedCounty] ? changes[clickedCounty][0] : '';
-    const alertString = types[alertForMap & 0xff] + letterBits[alertForMap & 0xff00];
-    const color = alertColors[alertString] || '#cccccc';
-    drawCounty(countyFeatures[clickedCounty], color);
+    svg.selectAll('*').remove();
+    svg.append('path')
+      .attr('class', 'selectedCounty')
+      .attr('d', path(countyFeatures[clickedCounty]));
   }
 
   previous = newClasses;
@@ -439,6 +441,8 @@ function sizeCanvas() {
   canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
   canvas.width = devicePixelRatio * width;
   canvas.height = devicePixelRatio * height;
+  svg.attr('width', width);
+  svg.attr('height', height)
   scaleFactor = width / 960;
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.strokeStyle = '#ffffff';
