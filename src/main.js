@@ -48,6 +48,13 @@ const typeBits = {
   0x1000: 'Statement',
 };
 
+const typeBitsShort = {
+  0x8000: 'Wrn',
+  0x4000: 'Adv',
+  0x2000: 'Wtch',
+  0x1000: 'Stmt',
+};
+
 const letterBits = {
   0x8000: 'W',
   0x4000: 'Y',
@@ -176,7 +183,7 @@ function timeToPosition() {
 
 function refreshHoverText() {
   if (!selectedCounty) {
-    lowerLegend.innerHTML = '<div class="legendTitle">Select a county to see alerts.</div>';
+    lowerLegend.innerHTML = '<span class="legendTitle">Select a county to see alerts.</span>';
     return;
   }
 
@@ -192,15 +199,16 @@ function refreshHoverText() {
     const alertType = av & 0xff00;
     const alert = alertNames[types[alertId]];
     const alertColor = alertColors[`${types[alertId]}${letterBits[alertType]}`];
+    const alertSuffix = window.innerWidth >= 375 ? typeBits[alertType] : typeBitsShort[alertType];
     if (alert) {
-      alerts = alerts.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert} ${typeBits[alertType]}</div>`);
+      alerts = alerts.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert} ${alertSuffix}</div>`);
     }
   }
   if (!alerts) {
-    alerts = 'No alerts';
+    alerts = '<div class="legendItem">No alerts</div>';
   }
 
-  lowerLegend.innerHTML = `<div class="legendTitle">${fullName}</div> ${alerts}`;
+  lowerLegend.innerHTML = `<span class="legendTitle">${fullName}</span>${alerts}`;
 }
 
 function drawCounty(county, fillStyle) {
