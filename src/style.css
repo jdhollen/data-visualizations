@@ -18,6 +18,11 @@ p {
   margin: 1em;
 }
 
+.selectedCounty {
+  fill: none;
+  stroke: red;
+}
+
 .block {
   background-color: #fff;
   border: 1px solid #eaeaea;
