@@ -269,6 +269,16 @@ function processSliderEvent() {
   redraw();
 }
 
+function refreshButtonState() {
+  if ((slideInProgress && pausedBeforeInputStarted) || (!slideInProgress && paused)) {
+    document.getElementById('playPause').className = 'play';
+  } else {
+    document.getElementById('playPause').className = 'pause';
+  }
+
+  document.getElementById('speed').className = `speed${speed + 1}`;
+}
+
 function handleSliderInputEvent() {
   if (!slideInProgress) {
     pausedBeforeInputStarted = paused;
@@ -371,9 +381,19 @@ function sizeCanvas() {
   }
 }
 
-function handlePlayPauseClick() {
-  rewind = false;
-  paused = !paused;
+function handlePlayPauseResetClick() {
+  console.log('uh');
+  if (currentTime >= max - dataStep) {
+    console.log('um');
+    currentTime = min;
+    rewind = false;
+    paused = false;
+  } else {
+    rewind = false;
+    paused = !paused;
+  }
+
+  refreshButtonState();
 }
 
 function handleBackwardClick() {
@@ -384,6 +404,7 @@ function handleBackwardClick() {
   paused = true;
   currentTime -= dataStep;
   redraw();
+  refreshButtonState();
 }
 
 function handleForwardClick() {
@@ -394,6 +415,7 @@ function handleForwardClick() {
   paused = true;
   currentTime += dataStep;
   redraw();
+  refreshButtonState();
 }
 
 function handleSpeedClick() {
@@ -432,6 +454,7 @@ function handleSpeedClick() {
   currentTime = min + (currentSteps * dataStep);
 
   redraw();
+  refreshButtonState();
 }
 
 function handleRewindClick() {
@@ -441,12 +464,7 @@ function handleRewindClick() {
   }
   rewind = !rewind;
   paused = !rewind;
-}
-
-function handleResetClick() {
-  currentTime = min;
-  rewind = false;
-  paused = false;
+  refreshButtonState();
 }
 
 function loadMapData(usData) {
@@ -483,12 +501,11 @@ function main() {
 
   document.getElementById('slider').addEventListener('change', handleSliderChangeEvent);
   document.getElementById('slider').addEventListener('input', handleSliderInputEvent);
-  document.getElementById('playPause').addEventListener('click', handlePlayPauseClick);
+  document.getElementById('playPause').addEventListener('click', handlePlayPauseResetClick);
   document.getElementById('oneForward').addEventListener('click', handleForwardClick);
   document.getElementById('oneBackward').addEventListener('click', handleBackwardClick);
   document.getElementById('speed').addEventListener('click', handleSpeedClick);
   document.getElementById('rewind').addEventListener('click', handleRewindClick);
-  document.getElementById('reset').addEventListener('click', handleResetClick);
 
   window.addEventListener('resize', sizeCanvas);
   window.addEventListener('orientationchange', sizeCanvas);

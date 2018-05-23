@@ -80,8 +80,8 @@ p {
   width: calc(100% - 60px);
 }
 
-.playPause {
-  background: transparent url('playpause.svg') center center no-repeat;
+.pause {
+  background: transparent url('svg/pause.svg') center center no-repeat;
   border-color: transparent;
   display: inline-block;
   height: 36px;
@@ -89,9 +89,94 @@ p {
   width: 36px;
 }
 
-.playPause:focus {
-  border-color: #ccccea;
-  outline: 0;
+.play {
+  background: transparent url('svg/play.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
+}
+
+.oneForward {
+  background: transparent url('svg/oneforward.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
+}
+
+.oneBackward {
+  background: transparent url('svg/onebackward.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
+}
+
+.speed3 {
+  background: transparent url('svg/s3.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
+}
+
+.speed4 {
+  background: transparent url('svg/s4.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
+}
+
+.speed5 {
+  background: transparent url('svg/s5.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
+}
+
+.speed2 {
+  background: transparent url('svg/s2.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
+}
+
+.speed1 {
+  background: transparent url('svg/s1.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
+}
+
+.rewind {
+  background: transparent url('svg/rewind.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
+}
+
+.reset {
+  background: transparent url('svg/reset.svg') center center no-repeat;
+  border-color: transparent;
+  display: inline-block;
+  height: 36px;
+  vertical-align: middle;
+  width: 36px;
 }
 
 .button {
@@ -188,7 +273,7 @@ p {
   margin-left: 16px;
   position: relative;
   vertical-align: middle;
-  width:calc(100% - 64px)
+  width:calc(100% - 220px)
 }
 
 .SV { background-color: orange;} /* Severe Thunderstorm (SV) */

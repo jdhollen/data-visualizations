@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50">
+
+<g>
+  <defs>
+    <clipPath id="clip"><path d="M50,50 L 0,50 L 0,16 Z" /></clipPath>
+  </defs>
+
+  <ellipse
+    clip-path="url(#clip)"
+    cx="50" cy="50" rx="40" ry="40"
+    style="fill: none; stroke: #333;" stroke-width="20" />
+  <ellipse
+    transform="rotate(36.5 50 50)"
+    clip-path="url(#clip)"
+    cx="50" cy="50" rx="40" ry="40"
+    style="fill: none; stroke: #333;" stroke-width="20" />
+  <ellipse
+    transform="rotate(73 50 50)"
+    clip-path="url(#clip)"
+    cx="50" cy="50" rx="40" ry="40"
+    style="fill: none; stroke: #333;" stroke-width="20" />
+  <ellipse
+    transform="rotate(109.5 50 50)"
+    clip-path="url(#clip)"
+    cx="50" cy="50" rx="40" ry="40"
+    style="fill: none; stroke: #ccc;" stroke-width="20" />
+  <ellipse
+    transform="rotate(146 50 50)"
+    clip-path="url(#clip)"
+    cx="50" cy="50" rx="40" ry="40"
+    style="fill: none; stroke: #ccc;" stroke-width="20" />
+</g>
+</svg>
