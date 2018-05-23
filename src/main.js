@@ -31,6 +31,12 @@ const max = 1525132800000;
 const positionSteps = 1000;
 const countyFeatures = {};
 
+const rewindButton = document.getElementById('rewind');
+const backButton = document.getElementById('oneBackward');
+const playPauseButton = document.getElementById('playPause');
+const forwardButton = document.getElementById('oneForward');
+const speedButton = document.getElementById('speed');
+
 const typeBits = {
   0x8000: 'Warning',
   0x4000: 'Advisory',
@@ -255,31 +261,47 @@ function redraw(ignorePreviousState) {
   }
 
   previous = newClasses;
-  document.getElementById('time').textContent = new Date(currentTime);
+  document.getElementById('time').textContent = getDateText();
   document.getElementById('slider').value = timeToPosition();
   refreshHoverText();
+}
+
+function datePad(v) {
+  return v < 10 ? `0${v}` : v;
+}
+
+function getDateText() {
+  const d = new Date(currentTime);
+
+  return `${d.getUTCFullYear()}-${datePad(d.getUTCMonth() + 1)}-${datePad(d.getUTCDate())} ${datePad(d.getUTCHours())}:${datePad(d.getUTCMinutes())} UTC`;
 }
 
 function processSliderEvent() {
   const newValue = document.getElementById('slider').value;
   const stepSize = Math.floor((max - dataStep - min) / positionSteps);
-  // TODO(jdhollen): round instead of floor here.
   const offset = (stepSize * newValue) - ((stepSize * newValue) % (stepMultiplier * dataStep));
   currentTime = min + offset;
   redraw();
 }
 
 function refreshButtonState() {
-  // TODO(jdhollen): hold refs to buttons.
+  let newPlayPause;
   if (currentTime >= max - dataStep) {
-    document.getElementById('playPause').className = 'reset';
+    newPlayPause = 'reset';
   } else if ((slideInProgress && pausedBeforeInputStarted) || (!slideInProgress && paused)) {
-    document.getElementById('playPause').className = 'play';
+    newPlayPause = 'play';
   } else {
-    document.getElementById('playPause').className = 'pause';
+    newPlayPause = 'pause';
   }
 
-  document.getElementById('speed').className = `speed${speed + 1}`;
+  if (playPauseButton.className !== newPlayPause) {
+    playPauseButton.className = newPlayPause;
+  }
+
+  const newSpeed = `speed${speed + 1}`;
+  if (speedButton.className !== newSpeed) {
+    speedButton.className = newSpeed;
+  }
 }
 
 function handleSliderInputEvent() {
@@ -497,11 +519,11 @@ function main() {
 
   document.getElementById('slider').addEventListener('change', handleSliderChangeEvent);
   document.getElementById('slider').addEventListener('input', handleSliderInputEvent);
-  document.getElementById('playPause').addEventListener('click', handlePlayPauseResetClick);
-  document.getElementById('oneForward').addEventListener('click', handleForwardClick);
-  document.getElementById('oneBackward').addEventListener('click', handleBackwardClick);
-  document.getElementById('speed').addEventListener('click', handleSpeedClick);
-  document.getElementById('rewind').addEventListener('click', handleRewindClick);
+  playPauseButton.addEventListener('click', handlePlayPauseResetClick);
+  forwardButton.addEventListener('click', handleForwardClick);
+  backButton.addEventListener('click', handleBackwardClick);
+  speedButton.addEventListener('click', handleSpeedClick);
+  rewindButton.addEventListener('click', handleRewindClick);
 
   window.addEventListener('resize', sizeCanvas);
   window.addEventListener('orientationchange', sizeCanvas);
