@@ -213,6 +213,15 @@ function drawCounty(county, fillStyle) {
   context.stroke();
 }
 
+function updateSelectionSvg() {
+  svg.selectAll('*').remove();
+  if (clickedCounty) {
+    svg.append('path')
+      .attr('class', 'selectedCounty')
+      .attr('d', path(countyFeatures[clickedCounty]));
+  }
+}
+
 function redraw(ignorePreviousState) {
   if (!arr32) {
     return;
@@ -262,12 +271,7 @@ function redraw(ignorePreviousState) {
     }
   }
 
-  if (clickedCounty) {
-    svg.selectAll('*').remove();
-    svg.append('path')
-      .attr('class', 'selectedCounty')
-      .attr('d', path(countyFeatures[clickedCounty]));
-  }
+  updateSelectionSvg();
 
   previous = newClasses;
   document.getElementById('time').textContent = getDateText();
@@ -396,8 +400,13 @@ function handleCanvasClick(e) {
       selectedCounty = 0;
     }
   }
-  clickedCounty = selectedCounty;
+  if (clickedCounty === selectedCounty) {
+    clickedCounty = 0;
+  } else {
+    clickedCounty = selectedCounty;
+  }
 
+  updateSelectionSvg();
   refreshHoverText();
 }
 
