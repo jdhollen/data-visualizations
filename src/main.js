@@ -277,10 +277,19 @@ function getDateText() {
 }
 
 function processSliderEvent() {
-  const newValue = document.getElementById('slider').value;
-  const stepSize = Math.floor((max - dataStep - min) / positionSteps);
-  const offset = (stepSize * newValue) - ((stepSize * newValue) % (stepMultiplier * dataStep));
-  currentTime = min + offset;
+  const newValue = Number(document.getElementById('slider').value);
+  console.log(newValue);
+  if (newValue === 1) {
+    currentTime = min;
+  } else if (newValue === 1000) {
+    currentTime = max - dataStep;
+  } else {
+    const stepSize = Math.floor((max - dataStep - min) / positionSteps);
+    // TODO(jdhollen): round instead of floor here.
+    const offset = (stepSize * newValue) - ((stepSize * newValue) % (stepMultiplier * dataStep));
+    currentTime = min + offset;
+  }
+  console.log("f " + (currentTime - min));
   redraw();
 }
 
@@ -321,7 +330,11 @@ function handleSliderChangeEvent() {
 
 function maybeRunStep() {
   refreshButtonState();
-  if (paused || (!rewind && currentTime >= max - dataStep) || (rewind && currentTime <= min)) {
+  if (paused || (!rewind && currentTime >= max - dataStep)) {
+    window.setTimeout(maybeRunStep, stepDelay);
+    return;
+  } else if (rewind && currentTime <= min) {
+    paused = true;
     window.setTimeout(maybeRunStep, stepDelay);
     return;
   }
