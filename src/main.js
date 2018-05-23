@@ -278,7 +278,6 @@ function getDateText() {
 
 function processSliderEvent() {
   const newValue = Number(document.getElementById('slider').value);
-  console.log(newValue);
   if (newValue === 1) {
     currentTime = min;
   } else if (newValue === 1000) {
@@ -289,7 +288,6 @@ function processSliderEvent() {
     const offset = (stepSize * newValue) - ((stepSize * newValue) % (stepMultiplier * dataStep));
     currentTime = min + offset;
   }
-  console.log("f " + (currentTime - min));
   redraw();
 }
 
