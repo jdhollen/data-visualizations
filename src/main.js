@@ -190,7 +190,6 @@ function refreshHoverText() {
     return;
   }
 
-  // TODO(jdhollen): flush out all missing names + fix.
   const stateName = countyNames[selectedCounty - (selectedCounty % 1000)];
   const fullName = `${countyNames[selectedCounty]}, ${stateName}`;
   const classes = previous[selectedCounty] || [];
