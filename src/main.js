@@ -16,8 +16,6 @@ let selectedCounty = 0;
 let clickedCounty = 0;
 let previous = {};
 let paused = false;
-let pausedBeforeInputStarted = false;
-let slideInProgress = false;
 let scaleFactor = 1;
 let us = {};
 let arr32;
@@ -314,7 +312,7 @@ function refreshButtonState() {
   let newPlayPause;
   if (currentTime >= max - dataStep) {
     newPlayPause = 'reset';
-  } else if ((slideInProgress && pausedBeforeInputStarted) || (!slideInProgress && paused)) {
+  } else if (paused) {
     newPlayPause = 'play';
   } else {
     newPlayPause = 'pause';
@@ -331,17 +329,12 @@ function refreshButtonState() {
 }
 
 function handleSliderInputEvent() {
-  if (!slideInProgress) {
-    pausedBeforeInputStarted = paused;
-  }
-  slideInProgress = true;
   paused = true;
   processSliderEvent();
 }
 
 function handleSliderChangeEvent() {
-  slideInProgress = false;
-  paused = pausedBeforeInputStarted;
+  paused = true;
   processSliderEvent();
 }
 
@@ -367,8 +360,8 @@ function handleMouseOver(e) {
   }
 
   const rect = canvas.getBoundingClientRect();
-  const offsetTop = rect.top + document.body.scrollTop;
-  const offsetLeft = rect.left + document.body.scrollLeft;
+  const offsetTop = rect.top;
+  const offsetLeft = rect.left;
 
   const ratio = 1 / (canvas.width / (960 * devicePixelRatio));
   const x = Math.floor(ratio * (e.clientX - offsetLeft));
@@ -391,8 +384,8 @@ function handleMouseOut() {
 
 function handleCanvasClick(e) {
   const rect = canvas.getBoundingClientRect();
-  const offsetTop = rect.top + document.body.scrollTop;
-  const offsetLeft = rect.left + document.body.scrollLeft;
+  const offsetTop = rect.top;
+  const offsetLeft = rect.left;
 
   const ratio = 1 / (canvas.width / (960 * devicePixelRatio));
   const x = Math.floor(ratio * (e.clientX - offsetLeft));
@@ -543,8 +536,8 @@ function handleRewindClick() {
     rewind = false;
     return;
   }
-  rewind = !rewind;
-  paused = !rewind;
+  rewind = true;
+  paused = false;
 }
 
 function loadMapData(usData) {

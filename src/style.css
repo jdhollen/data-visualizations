@@ -533,8 +533,12 @@ input[type=range]::-ms-thumb {
   border-radius: 14px;
   background: #222222;
   cursor: pointer;
-  height: 5px;
 }
+
+input[type=range]::-ms-tooltip {
+  display: none;
+}
+
 input[type=range]:focus::-ms-fill-lower {
   background: #222222;
 }
