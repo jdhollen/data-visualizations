@@ -23,14 +23,14 @@ let arr16;
 let clicks16;
 let meshed;
 let nation;
-let speed = 2;
-let speedBeforeRewind = 2;
+let speed = 3;
+let speedBeforeRewind = 3;
 let stepDelay = 24; // or 48, or 96.
-let stepMultiplier = 1;
+let stepMultiplier = 2;
 let rewind = false;
 
 const min = 1514764800000;
-const max = 1525132800000;
+const max = 1526947200000;
 const positionSteps = 1000;
 const countyFeatures = [];
 
@@ -64,10 +64,10 @@ const letterBits = {
 const types = [
   'NONE',
   'RH', 'VO', 'AF', 'TS', 'TO', 'HU', 'TY', 'EW', 'HF', 'HI', 'TR', 'SV', 'BZ',
-  'SQ', 'WS', 'DS', 'WW', 'IS', 'LB', 'LE', 'HS', 'HP', 'FF', 'SB', 'SN', 'BS',
-  'IP', 'ZR', 'SR', 'GL', 'TI', 'SM', 'AV', 'DU', 'CF', 'LS', 'FA', 'FL', 'HY',
-  'ZF', 'FG', 'FW', 'HW', 'WI', 'EC', 'EH', 'HZ', 'HT', 'FZ', 'LW', 'WC', 'UP',
-  'SE', 'SU', 'BH', 'LO', 'MA', 'SC', 'SI', 'RB', 'FR', 'AS', 'RP'];
+  'SQ', 'WS', 'DS', 'WW', 'IS', 'LB', 'LE', 'HS', 'HP', 'SS', 'FF', 'SB', 'SN',
+  'BS', 'IP', 'ZR', 'SR', 'GL', 'TI', 'SM', 'AV', 'DU', 'CF', 'LS', 'FA', 'FL',
+  'HY', 'ZF', 'FG', 'FW', 'HW', 'WI', 'EC', 'EH', 'HZ', 'HT', 'FZ', 'LW', 'WC',
+  'UP', 'SE', 'SU', 'BH', 'LO', 'MA', 'SC', 'SI', 'RB', 'FR', 'AS', 'RP'];
 
 const alertColors = {
   ASY: '#808080',
@@ -135,6 +135,10 @@ const alertColors = {
   RHW: '#4B0082',
   FWW: '#FF1493',
   RPS: '#40E0D0',
+  SSS: '#8B0000',
+  SSW: '#8B0000',
+  SSA: '#2E8B57',
+  SSY: '#2E8B57',
   SVW: '#FFA500',
   SVA: '#DB7093',
   SVS: '#00FFFF',
@@ -586,7 +590,7 @@ function getBuf(r) {
 }
 
 function main() {
-  const weather = fetch('data/weather-type.dat').then(getBuf).then(b => loadWeatherData(b));
+  const weather = fetch('data/weather-type-2018.dat').then(getBuf).then(b => loadWeatherData(b));
   const clicks = fetch('data/clicks.dat').then(getBuf).then(b => loadClickMap(b));
   const alerts = fetch('data/alert-names.json').then(getJson).then((j) => { alertNames = j; });
   const counties = fetch('data/county-names.json').then(getJson).then((j) => { countyNames = j; });
