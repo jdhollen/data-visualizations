@@ -1,6 +1,6 @@
 html {
   background-color: #fafafa;
-  font-family: sans-serif;
+  font-family: Helvetica,Arial,sans-serif;
   height: 100%;
   width: 100%;
 }
@@ -15,7 +15,22 @@ body {
 
 p {
   font-size: 0.9em;
-  margin: 1em;
+  line-height: 1.4em;
+  margin: 0;
+  padding: 0.5em 0;
+}
+
+a {
+  color: #378fe6;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a:visited {
+  color: #8252ad;
 }
 
 .selectedCounty {
@@ -57,10 +72,15 @@ p {
 }
 
 .title {
-  display: inline-block;
   font-size: 2em;
   font-weight: bold;
-  margin: 0.25em 0.5em;
+}
+
+.header {
+  display: inline-block;
+  font-size: 1.5em;
+  font-weight: bold;
+  padding: 0.5em 0;
 }
 
 .footer {
@@ -87,6 +107,16 @@ p {
   padding: 0 1em;
   position:relative;
   width:100%;
+}
+
+.textBlock {
+  padding: 0.5em 1em;
+}
+
+.question {
+  font-size: 1.0em;
+  font-weight: bold;
+  padding-top: 0.5em;
 }
 
 .legend {

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>NWS Watches and Warnings</title>
+    <title>NWS Watches, Warnings, and Advisories</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
     <link rel="stylesheet" href="style.css">
     <link rel="prefetch" href="svg/play.svg" as="image">
@@ -14,7 +14,7 @@
   </head>
   <body>
     <div class="background"></div>
-    <div class="block">
+    <div class="block textBlock">
       <div class="title">NWS Warnings, 2018</div>
     </div>
     <div class="block">
@@ -38,12 +38,70 @@
     </div>
     <div id="lowerLegend" class="block legend">
     </div>
-    <div class="block">
+    <div class="block textBlock">
       <div>
-        <p> This is a simple little animation that shows all of the watches and
-          warnings that have been issued by the National Weather Service this
-          year.
+        <p> This map displays all watches, warnings, and advisories issued by
+          the National Weather Service over a period of 12 months <span style="display:inline-block">(May 1, 2017 to May 1, 2018)</span>.
+          It's basically an animated version of the
+          <a href="http://www.spc.noaa.gov/products/wwa/NWS">NWS WWA Display</a>.
+          I joined <a href="https://mesonet.agron.iastate.edu/request/gis/watchwarn.phtml">archival data</a>
+          from the <a href="https://mesonet.agron.iastate.edu/">Iowa Environmental Mesonet</a> against
+          <a href="https://github.com/topojson/us-atlas">mbostock's TopoJSON topology</a> of
+          <a href="https://www.census.gov/geo/maps-data/data/tiger-cart-boundary.html">US Census data</a>.
+          Phew!
         </p>
+        <div class="header">The data</div>
+        <p>The NWS issues
+        <a href="https://www.weather.gov/media/pah/WeatherEducation/stormbased.pdf">polygonal
+          storm-based warnings</a>, but this map links alerts to entire counties.
+          You'll sometimes see a county highlighted for a relatively small flood,
+          or a Winter Storm Warning covering a whole county when only part of the county had a chance
+          of snow (particularly out West).  If the warning covers more than 10 km² of a county,
+          the county is considered a part of the warning.  I did this because I care about your
+          data plan.
+        </p>
+        <p>
+          Start and end times for alerts are rounded down to the nearest 15-minute interval.  Some
+          alerts in IEM have bad end times (prior to their start times) due to weird data issues
+          coming from NWS; those alerts are dropped.
+        </p>
+        <p>
+          Also, note that there's an entire class of
+          <a href="https://en.wikipedia.org/wiki/Severe_weather_terminology_(United_States)#Marine_hazards">marine warnings</a>
+          that are scrubbed out of this data.
+        </p>
+        <div class="header">Questions and Answers</div>
+        <div class="question">Why are the colors so ugly?</div>
+        <p>
+          Hey, that's not very nice.  This just matches the
+          <a href="https://www.weather.gov/help-map">NWS colors</a>, though, so
+          you'll have to ask them.
+        </p>
+        <div class="question">Why is there a Winter Storm Warning in Hawaii?</div>
+        <p>
+          Because there are
+          <a href="http://www.hawaiinewsnow.com/story/36926837/a-winter-wonderland-mauna-kea-sees-heavy-snow-and-more-is-on-the-way">winter storms in Hawaii</a>.
+        </p>
+        <div class="question">Why did you make this?</div>
+        <p>
+          I wanted a cheap proxy for "the weather was bad" to use for other projects.
+          The animation was interesting to watch on its own, so I packaged it up.
+        </p>
+        <div class="question">What did you write it in?</div>
+        <p>
+          The map was made with <a href="https://d3js.org/">D3.js</a>,
+          <a href="https://github.com/topojson/topojson">TopoJSON</a>,
+          <a href="https://polyfill.io">a few polyfills</a>,
+          and a little custom binary format for loading the warning data.  The
+          code was transpiled with <a href="https://babeljs.io/">Babel</a> (hey there, IE11 users!).
+        </p>
+        <div class="question">Where's the source?</div>
+        <p>
+        The source for this page is on <a href="https://github.com/jdhollen/data-visualizations">GitHub</a>.
+        The source for the data pipeline will be up soon, too.
+        </p>
+        <div class="question">I have more questions!</div>
+        <p> I'm on <em>the bird</em>. <a href="https://twitter.com/jdhollen">@jdhollen</a></p>
       </div>
     </div>
 
