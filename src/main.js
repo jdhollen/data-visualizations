@@ -24,6 +24,7 @@ let clicks16;
 let meshed;
 let nation;
 let speed = 2;
+let speedBeforeRewind = 2;
 let stepDelay = 24; // or 48, or 96.
 let stepMultiplier = 1;
 let rewind = false;
@@ -463,6 +464,11 @@ function sizeCanvas() {
 }
 
 function handlePlayPauseResetClick() {
+  if (rewind) {
+    speed = speedBeforeRewind;
+    resetStepForSpeed();
+  }
+
   if (currentTime >= max - dataStep) {
     currentTime = min;
     rewind = false;
@@ -474,6 +480,10 @@ function handlePlayPauseResetClick() {
 }
 
 function handleBackwardClick() {
+  if (rewind) {
+    speed = speedBeforeRewind;
+    resetStepForSpeed();
+  }
   if (currentTime === min) {
     return;
   }
@@ -484,6 +494,10 @@ function handleBackwardClick() {
 }
 
 function handleForwardClick() {
+  if (rewind) {
+    speed = speedBeforeRewind;
+    resetStepForSpeed();
+  }
   if (currentTime === max - dataStep) {
     return;
   }
@@ -495,6 +509,11 @@ function handleForwardClick() {
 
 function handleSpeedClick() {
   speed = (speed + 1) % 5;
+  resetStepForSpeed();
+  redraw();
+}
+
+function resetStepForSpeed() {
   switch (speed) {
     case 0:
       stepDelay = 96;
@@ -521,20 +540,23 @@ function handleSpeedClick() {
       stepMultiplier = 1;
       break;
   }
-
   const numSteps = (max - min) / dataStep;
   let currentSteps = (currentTime - min) / dataStep;
   currentSteps += (currentSteps % stepMultiplier);
   currentSteps = Math.min(numSteps - 1, currentSteps);
   currentTime = min + (currentSteps * dataStep);
-
-  redraw();
 }
 
 function handleRewindClick() {
   if (currentTime <= min) {
     rewind = false;
     return;
+  }
+  if (rewind) {
+    speed = Math.min(4, speed + 1);
+    resetStepForSpeed();
+  } else {
+    speedBeforeRewind = speed;
   }
   rewind = true;
   paused = false;
