@@ -330,12 +330,10 @@ function refreshButtonState() {
 }
 
 function handleSliderInputEvent() {
-  paused = true;
   processSliderEvent();
 }
 
 function handleSliderChangeEvent() {
-  paused = true;
   processSliderEvent();
 }
 
