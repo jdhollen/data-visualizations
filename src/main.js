@@ -305,7 +305,6 @@ function processSliderEvent() {
     currentTime = max - dataStep;
   } else {
     const stepSize = Math.floor((max - dataStep - min) / positionSteps);
-    // TODO(jdhollen): round instead of floor here.
     const offset = (stepSize * newValue) - ((stepSize * newValue) % (stepMultiplier * dataStep));
     currentTime = min + offset;
   }
