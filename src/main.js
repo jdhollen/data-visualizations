@@ -40,21 +40,21 @@ const playPauseButton = document.getElementById('playPause');
 const forwardButton = document.getElementById('oneForward');
 const speedButton = document.getElementById('speed');
 
-const typeBits = {
+const alertTypeNames = {
   0x8000: 'Warning',
   0x4000: 'Advisory',
   0x2000: 'Watch',
   0x1000: 'Statement',
 };
 
-const typeBitsShort = {
+const alertTypeShortNames = {
   0x8000: 'Wrn',
   0x4000: 'Adv',
   0x2000: 'Wtch',
   0x1000: 'Stmt',
 };
 
-const letterBits = {
+const alertTypeCodes = {
   0x8000: 'W',
   0x4000: 'Y',
   0x2000: 'A',
@@ -200,8 +200,9 @@ function refreshHoverText() {
     const alertId = av & 0xff;
     const alertType = av & 0xff00;
     const alert = alertNames[types[alertId]];
-    const alertColor = alertColors[`${types[alertId]}${letterBits[alertType]}`];
-    const alertSuffix = window.innerWidth >= 375 ? typeBits[alertType] : typeBitsShort[alertType];
+    const alertColor = alertColors[`${types[alertId]}${alertTypeCodes[alertType]}`];
+    const alertSuffix = (window.innerWidth >= 375)
+      ? alertTypeNames[alertType] : alertTypeShortNames[alertType];
     if (alert) {
       alerts = alerts.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert} ${alertSuffix}</div>`);
     }
@@ -273,7 +274,7 @@ function redraw(ignorePreviousState) {
     const alertForMap = changes[countyId] ? changes[countyId][0] : '';
     const previousAlertForMap = previous[countyId] ? previous[countyId][0] : '';
     if (ignorePreviousState || alertForMap !== previousAlertForMap) {
-      const alertString = types[alertForMap & 0xff] + letterBits[alertForMap & 0xff00];
+      const alertString = types[alertForMap & 0xff] + alertTypeCodes[alertForMap & 0xff00];
       const color = alertColors[alertString] || '#cccccc';
       drawCounty(countyFeatures[countyId], color);
     }
