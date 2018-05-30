@@ -2,14 +2,35 @@
 /* eslint-env browser */
 /* eslint no-use-before-define: ['error', 'nofunc'] */
 /* eslint no-bitwise: ['error', { 'allow': ['&', '|'] }] */
-const dataStep = 15 * 60 * 1000;
 
+/*
+ * A canvas is used to render the actual alert map and county colors because
+ * canvas rendering performs better than SVGs (way less memory used than
+ * creating 3000 paths).  We only use an SVG for rendering the user's selection.
+ */
+const canvas = document.getElementById('map');
+const context = canvas.getContext('2d');
+const canvasPath = d3.geoPath().context(context);
+
+/*
+ * An SVG is used to render the red selection outline for counties.  On the
+ * canvas, when we draw outlines / shade in counties, we just "re-stamp" the
+ * county shape over the map.  Drawing a red border in the canvas leads to
+ * anti-aliasing, which leaves behind a weird red feathering effect when a
+ * county is deselected.  Using an SVG just for selection makes the selection
+ * look sharp without paying the price of rendering the whole map in SVG land.
+ */
 const svg = d3.select('#svg');
 const path = d3.geoPath();
-const context = d3.select('canvas').node().getContext('2d');
-const canvas = document.getElementById('map');
-const canvasPath = d3.geoPath().context(context);
-const lowerLegend = document.getElementById('lowerLegend');
+
+// Grab a bunch of DOM elements, yada yada.
+const rewindButton = document.getElementById('rewind');
+const backButton = document.getElementById('oneBackward');
+const playPauseButton = document.getElementById('playPause');
+const forwardButton = document.getElementById('oneForward');
+const speedButton = document.getElementById('speed');
+const legend = document.getElementById('legend');
+
 let countyNames = {};
 let alertNames = {};
 let selectedCounty = 0;
@@ -31,14 +52,9 @@ let rewind = false;
 
 const min = 1514764800000;
 const max = 1526947200000;
+const dataStep = 15 * 60 * 1000;
 const positionSteps = 1000;
 const countyFeatures = [];
-
-const rewindButton = document.getElementById('rewind');
-const backButton = document.getElementById('oneBackward');
-const playPauseButton = document.getElementById('playPause');
-const forwardButton = document.getElementById('oneForward');
-const speedButton = document.getElementById('speed');
 
 const alertTypeNames = {
   0x8000: 'Warning',
@@ -186,7 +202,7 @@ function timeToPosition() {
 
 function refreshHoverText() {
   if (!selectedCounty) {
-    lowerLegend.innerHTML = '<span class="legendTitle">Select a county to see alerts.</span>';
+    legend.innerHTML = '<span class="legendTitle">Select a county to see alerts.</span>';
     return;
   }
 
@@ -211,7 +227,7 @@ function refreshHoverText() {
     alerts = '<div class="legendItem">No alerts</div>';
   }
 
-  lowerLegend.innerHTML = `<span class="legendTitle">${fullName}</span>${alerts}`;
+  legend.innerHTML = `<span class="legendTitle">${fullName}</span>${alerts}`;
 }
 
 function drawCounty(county, fillStyle) {
