@@ -31,30 +31,10 @@ const forwardButton = document.getElementById('oneForward');
 const speedButton = document.getElementById('speed');
 const legend = document.getElementById('legend');
 
-let countyNames = {};
-let alertNames = {};
-let selectedCounty = 0;
-let clickedCounty = 0;
-let previous = {};
-let paused = false;
-let scaleFactor = 1;
-let us = {};
-let arr32;
-let arr16;
-let clicks16;
-let meshed;
-let nation;
-let speed = 3;
-let speedBeforeRewind = 3;
-let stepDelay = 24; // or 48, or 96.
-let stepMultiplier = 2;
-let rewind = false;
-
 const min = 1514764800000;
 const max = 1526947200000;
 const dataStep = 15 * 60 * 1000;
 const positionSteps = 1000;
-const countyFeatures = [];
 
 const alertTypeNames = {
   0x8000: 'Warning',
@@ -186,48 +166,397 @@ const alertColors = {
   FAA: '#2E8B57',
 };
 
-let currentTime = min;
+class WeatherMap {
+  constructor(weather, clicks, alerts, counties, map) {
+    this.arr32 = new Uint32Array(weather, 0, (weather.byteLength - (weather.byteLength % 4)) / 4);
+    this.arr16 = new Uint16Array(weather);
 
-function timeToPosition() {
-  if (currentTime <= min) {
-    return 1;
+    this.countyNames = counties;
+    this.alertNames = alerts;
+    this.clicks16 = new Uint16Array(clicks);
+    this.us = map;
+    const countyFeatures = [];
+    const countyTopojson = topojson.feature(this.us, this.us.objects.counties).features;
+
+    for (let i = 0; i < countyTopojson.length; i += 1) {
+      countyFeatures[Number(countyTopojson[i].id)] = countyTopojson[i];
+    }
+    this.meshed = topojson.mesh(this.us);
+    this.nation = topojson.feature(this.us, this.us.objects.nation);
+
+    this.countyFeatures = countyFeatures;
+    this.selectedCounty = 0;
+    this.clickedCounty = 0;
+    this.previous = {};
+    this.paused = false;
+    this.scaleFactor = 1;
+    this.speed = 3;
+    this.speedBeforeRewind = 3;
+    this.stepDelay = 24; // or 48, or 96.
+    this.stepMultiplier = 2;
+    this.rewind = false;
+
+    this.currentTime = min;
   }
-  if (currentTime >= max - dataStep) {
-    return positionSteps;
+
+  timeToPosition() {
+    if (this.currentTime <= min) {
+      return 1;
+    }
+    if (this.currentTime >= max - dataStep) {
+      return positionSteps;
+    }
+
+    return (1 + positionSteps) -
+      Math.ceil(((max - dataStep - this.currentTime) / (max - dataStep - min)) * positionSteps);
   }
 
-  return (1 + positionSteps) -
-    Math.ceil(((max - dataStep - currentTime) / (max - dataStep - min)) * positionSteps);
-}
+  refreshHoverText() {
+    if (!this.selectedCounty) {
+      legend.innerHTML = '<span class="legendTitle">Select a county to see alerts.</span>';
+      return;
+    }
 
-function refreshHoverText() {
-  if (!selectedCounty) {
-    legend.innerHTML = '<span class="legendTitle">Select a county to see alerts.</span>';
-    return;
+    const stateName = this.countyNames[this.selectedCounty - (this.selectedCounty % 1000)];
+    const fullName = `${this.countyNames[this.selectedCounty]}, ${stateName}`;
+    const classes = this.previous[this.selectedCounty] || [];
+
+    let alerts = '';
+    for (let i = 0; i < classes.length; i += 1) {
+      const av = classes[i];
+      const alertId = av & 0xff;
+      const alertType = av & 0xff00;
+      const alert = this.alertNames[types[alertId]];
+      const alertColor = alertColors[`${types[alertId]}${alertTypeCodes[alertType]}`];
+      const alertSuffix = (window.innerWidth >= 375)
+        ? alertTypeNames[alertType] : alertTypeShortNames[alertType];
+      if (alert) {
+        alerts = alerts.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert} ${alertSuffix}</div>`);
+      }
+    }
+    if (!alerts) {
+      alerts = '<div class="legendItem">No alerts</div>';
+    }
+
+    legend.innerHTML = `<span class="legendTitle">${fullName}</span>${alerts}`;
   }
 
-  const stateName = countyNames[selectedCounty - (selectedCounty % 1000)];
-  const fullName = `${countyNames[selectedCounty]}, ${stateName}`;
-  const classes = previous[selectedCounty] || [];
-
-  let alerts = '';
-  for (let i = 0; i < classes.length; i += 1) {
-    const av = classes[i];
-    const alertId = av & 0xff;
-    const alertType = av & 0xff00;
-    const alert = alertNames[types[alertId]];
-    const alertColor = alertColors[`${types[alertId]}${alertTypeCodes[alertType]}`];
-    const alertSuffix = (window.innerWidth >= 375)
-      ? alertTypeNames[alertType] : alertTypeShortNames[alertType];
-    if (alert) {
-      alerts = alerts.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert} ${alertSuffix}</div>`);
+  updateSelectionSvg() {
+    svg.selectAll('*').remove();
+    if (this.clickedCounty) {
+      svg.append('path')
+        .attr('class', 'selectedCounty')
+        .attr('d', path(this.countyFeatures[this.clickedCounty]));
     }
   }
-  if (!alerts) {
-    alerts = '<div class="legendItem">No alerts</div>';
+
+  redraw(ignorePreviousState) {
+    const newValue = (this.currentTime - min) / dataStep;
+    const newClasses = {};
+    const changes = {};
+
+    const previousKeys = Object.keys(this.previous);
+    for (let i = 0; i < previousKeys.length; i += 1) {
+      changes[previousKeys[i]] = [];
+    }
+
+    let index16 = this.arr32[3 + newValue];
+
+    while (true) {
+      const av = this.arr16[index16];
+      const alertId = av & 0xff;
+      if (alertId === 0) {
+        break;
+      }
+      const length = this.arr16[index16 + 1];
+      index16 += 2;
+      for (let i = index16; i < index16 + length; i += 1) {
+        const county = this.arr16[i];
+        if (!newClasses[county]) {
+          newClasses[county] = [av];
+          changes[county] = [av];
+        } else {
+          newClasses[county].push(av);
+          changes[county].push(av);
+        }
+      }
+      index16 += length;
+    }
+
+    const changeKeys = Object.keys(changes);
+    for (let i = 0; i < changeKeys.length; i += 1) {
+      const countyId = changeKeys[i];
+      const alertForMap = changes[countyId] ? changes[countyId][0] : '';
+      const previousAlertForMap = this.previous[countyId] ? this.previous[countyId][0] : '';
+      if (ignorePreviousState || alertForMap !== previousAlertForMap) {
+        const alertString = types[alertForMap & 0xff] + alertTypeCodes[alertForMap & 0xff00];
+        const color = alertColors[alertString] || '#cccccc';
+        drawCounty(this.countyFeatures[countyId], color);
+      }
+    }
+
+    this.updateSelectionSvg();
+
+    this.previous = newClasses;
+    document.getElementById('time').textContent = this.getDateText();
+    document.getElementById('slider').value = this.timeToPosition();
+    this.refreshHoverText();
   }
 
-  legend.innerHTML = `<span class="legendTitle">${fullName}</span>${alerts}`;
+  getDateText() {
+    const d = new Date(this.currentTime);
+
+    return `${d.getUTCFullYear()}-${datePad(d.getUTCMonth() + 1)}-${datePad(d.getUTCDate())} ${datePad(d.getUTCHours())}:${datePad(d.getUTCMinutes())} UTC`;
+  }
+
+  processSliderEvent() {
+    const newValue = Number(document.getElementById('slider').value);
+    if (newValue === 1) {
+      this.currentTime = min;
+    } else if (newValue === 1000) {
+      this.currentTime = max - dataStep;
+    } else {
+      const stepSize = Math.floor((max - dataStep - min) / positionSteps);
+      const offset =
+        (stepSize * newValue) - ((stepSize * newValue) % (this.stepMultiplier * dataStep));
+      this.currentTime = min + offset;
+    }
+    this.redraw();
+  }
+
+  refreshButtonState() {
+    let newPlayPause;
+    if (this.currentTime >= max - dataStep) {
+      newPlayPause = 'reset';
+    } else if (this.paused) {
+      newPlayPause = 'play';
+    } else {
+      newPlayPause = 'pause';
+    }
+
+    if (playPauseButton.className !== newPlayPause) {
+      playPauseButton.className = newPlayPause;
+    }
+
+    const newSpeed = `speed${this.speed + 1}`;
+    if (speedButton.className !== newSpeed) {
+      speedButton.className = newSpeed;
+    }
+  }
+
+  maybeRunStep() {
+    this.refreshButtonState();
+    if (this.paused || (!this.rewind && this.currentTime >= max - dataStep)) {
+      window.setTimeout(() => { this.maybeRunStep(); }, this.stepDelay);
+      return;
+    } else if (this.rewind && this.currentTime <= min) {
+      this.paused = true;
+      window.setTimeout(() => { this.maybeRunStep(); }, this.stepDelay);
+      return;
+    }
+    this.currentTime += (this.stepMultiplier * dataStep) * (this.rewind ? -1 : 1);
+    this.currentTime = Math.max(min, Math.min(this.currentTime, max - dataStep));
+    this.redraw();
+    window.setTimeout(() => { this.maybeRunStep(); }, this.stepDelay);
+  }
+
+  handleMouseOver(e) {
+    if (this.clickedCounty) {
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const offsetTop = rect.top;
+    const offsetLeft = rect.left;
+
+    const ratio = 1 / (canvas.width / (960 * devicePixelRatio));
+    const x = Math.floor(ratio * (e.clientX - offsetLeft));
+    const y = Math.floor(ratio * (e.clientY - offsetTop));
+
+    if (this.clicks16) {
+      const id = this.clicks16[(x * 600) + y];
+      this.selectedCounty = id;
+    }
+    this.refreshHoverText();
+  }
+
+  handleCanvasClick(e) {
+    const rect = canvas.getBoundingClientRect();
+    const offsetTop = rect.top;
+    const offsetLeft = rect.left;
+
+    const ratio = 1 / (canvas.width / (960 * devicePixelRatio));
+    const x = Math.floor(ratio * (e.clientX - offsetLeft));
+    const y = Math.floor(ratio * (e.clientY - offsetTop));
+
+    if (this.clicks16) {
+      const id = this.clicks16[(x * 600) + y];
+      if (id > 0) {
+        this.selectedCounty = id;
+      } else {
+        this.selectedCounty = 0;
+      }
+    }
+    if (this.clickedCounty === this.selectedCounty) {
+      this.clickedCounty = 0;
+    } else {
+      this.clickedCounty = this.selectedCounty;
+    }
+
+    this.updateSelectionSvg();
+    this.refreshHoverText();
+  }
+
+  drawBaseMap() {
+    context.beginPath();
+    context.fillStyle = '#cccccc';
+    canvasPath(this.nation);
+    context.fill();
+
+    context.beginPath();
+    context.strokeStyle = '#ffffff';
+    context.lineWidth = 0.5;
+    canvasPath(this.meshed);
+    context.stroke();
+  }
+
+
+  handleSliderInputEvent() {
+    this.processSliderEvent();
+  }
+
+  handleSliderChangeEvent() {
+    this.processSliderEvent();
+  }
+
+  handleMouseOut() {
+    if (this.clickedCounty) {
+      return;
+    }
+    this.selectedCounty = 0;
+    this.refreshHoverText();
+  }
+
+  sizeCanvas() {
+    const w = Math.min(860, window.innerWidth);
+    const h = Math.max(300, Math.min(600, window.innerHeight - 100));
+    const width = w * 0.625 < h ? w : h / 0.625;
+    const height = width * 0.625;
+
+    canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
+    canvas.width = devicePixelRatio * width;
+    canvas.height = devicePixelRatio * height;
+    svg.attr('width', width);
+    svg.attr('height', height);
+    this.scaleFactor = width / 960;
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.strokeStyle = '#ffffff';
+    context.lineWidth = 0.5;
+    context.scale(devicePixelRatio * this.scaleFactor, devicePixelRatio * this.scaleFactor);
+    if (this.us) {
+      this.drawBaseMap();
+      this.redraw(true);
+    }
+  }
+
+  handlePlayPauseResetClick() {
+    if (this.rewind) {
+      this.speed = this.speedBeforeRewind;
+      this.resetStepForSpeed();
+    }
+
+    if (this.currentTime >= max - dataStep) {
+      this.currentTime = min;
+      this.rewind = false;
+      this.paused = false;
+    } else {
+      this.rewind = false;
+      this.paused = !this.paused;
+    }
+  }
+
+  handleBackwardClick() {
+    if (this.rewind) {
+      this.speed = this.speedBeforeRewind;
+      this.resetStepForSpeed();
+    }
+    if (this.currentTime === min) {
+      return;
+    }
+    this.rewind = false;
+    this.paused = true;
+    this.currentTime -= dataStep;
+    this.redraw();
+  }
+
+  handleForwardClick() {
+    if (this.rewind) {
+      this.speed = this.speedBeforeRewind;
+      this.resetStepForSpeed();
+    }
+    if (this.currentTime === max - dataStep) {
+      return;
+    }
+    this.rewind = false;
+    this.paused = true;
+    this.currentTime += dataStep;
+    this.redraw();
+  }
+
+  handleSpeedClick() {
+    this.speed = (this.speed + 1) % 5;
+    this.resetStepForSpeed();
+    this.redraw();
+  }
+
+  resetStepForSpeed() {
+    switch (this.speed) {
+      case 0:
+        this.stepDelay = 96;
+        this.stepMultiplier = 1;
+        break;
+      case 1:
+        this.stepDelay = 48;
+        this.stepMultiplier = 1;
+        break;
+      case 2:
+        this.stepDelay = 24;
+        this.stepMultiplier = 1;
+        break;
+      case 3:
+        this.stepDelay = 24;
+        this.stepMultiplier = 2;
+        break;
+      case 4:
+        this.stepDelay = 24;
+        this.stepMultiplier = 4;
+        break;
+      default:
+        this.stepDelay = 24;
+        this.stepMultiplier = 1;
+        break;
+    }
+    const numSteps = (max - min) / dataStep;
+    let currentSteps = (this.currentTime - min) / dataStep;
+    currentSteps += (currentSteps % this.stepMultiplier);
+    currentSteps = Math.min(numSteps - 1, currentSteps);
+    this.currentTime = min + (currentSteps * dataStep);
+  }
+
+  handleRewindClick() {
+    if (this.currentTime <= min) {
+      this.rewind = false;
+      return;
+    }
+    if (this.rewind) {
+      this.speed = Math.min(4, this.speed + 1);
+      this.resetStepForSpeed();
+    } else {
+      this.speedBeforeRewind = this.speed;
+    }
+    this.rewind = true;
+    this.paused = false;
+  }
 }
 
 function drawCounty(county, fillStyle) {
@@ -238,356 +567,8 @@ function drawCounty(county, fillStyle) {
   context.stroke();
 }
 
-function updateSelectionSvg() {
-  svg.selectAll('*').remove();
-  if (clickedCounty) {
-    svg.append('path')
-      .attr('class', 'selectedCounty')
-      .attr('d', path(countyFeatures[clickedCounty]));
-  }
-}
-
-function redraw(ignorePreviousState) {
-  if (!arr32) {
-    return;
-  }
-
-  const newValue = (currentTime - min) / dataStep;
-  const newClasses = {};
-  const changes = {};
-
-  const previousKeys = Object.keys(previous);
-  for (let i = 0; i < previousKeys.length; i += 1) {
-    changes[previousKeys[i]] = [];
-  }
-
-  let index16 = arr32[3 + newValue];
-
-  while (true) {
-    const av = arr16[index16];
-    const alertId = av & 0xff;
-    if (alertId === 0) {
-      break;
-    }
-    const length = arr16[index16 + 1];
-    index16 += 2;
-    for (let i = index16; i < index16 + length; i += 1) {
-      const county = arr16[i];
-      if (!newClasses[county]) {
-        newClasses[county] = [av];
-        changes[county] = [av];
-      } else {
-        newClasses[county].push(av);
-        changes[county].push(av);
-      }
-    }
-    index16 += length;
-  }
-
-  const changeKeys = Object.keys(changes);
-  for (let i = 0; i < changeKeys.length; i += 1) {
-    const countyId = changeKeys[i];
-    const alertForMap = changes[countyId] ? changes[countyId][0] : '';
-    const previousAlertForMap = previous[countyId] ? previous[countyId][0] : '';
-    if (ignorePreviousState || alertForMap !== previousAlertForMap) {
-      const alertString = types[alertForMap & 0xff] + alertTypeCodes[alertForMap & 0xff00];
-      const color = alertColors[alertString] || '#cccccc';
-      drawCounty(countyFeatures[countyId], color);
-    }
-  }
-
-  updateSelectionSvg();
-
-  previous = newClasses;
-  document.getElementById('time').textContent = getDateText();
-  document.getElementById('slider').value = timeToPosition();
-  refreshHoverText();
-}
-
 function datePad(v) {
   return v < 10 ? `0${v}` : v;
-}
-
-function getDateText() {
-  const d = new Date(currentTime);
-
-  return `${d.getUTCFullYear()}-${datePad(d.getUTCMonth() + 1)}-${datePad(d.getUTCDate())} ${datePad(d.getUTCHours())}:${datePad(d.getUTCMinutes())} UTC`;
-}
-
-function processSliderEvent() {
-  const newValue = Number(document.getElementById('slider').value);
-  if (newValue === 1) {
-    currentTime = min;
-  } else if (newValue === 1000) {
-    currentTime = max - dataStep;
-  } else {
-    const stepSize = Math.floor((max - dataStep - min) / positionSteps);
-    const offset = (stepSize * newValue) - ((stepSize * newValue) % (stepMultiplier * dataStep));
-    currentTime = min + offset;
-  }
-  redraw();
-}
-
-function refreshButtonState() {
-  let newPlayPause;
-  if (currentTime >= max - dataStep) {
-    newPlayPause = 'reset';
-  } else if (paused) {
-    newPlayPause = 'play';
-  } else {
-    newPlayPause = 'pause';
-  }
-
-  if (playPauseButton.className !== newPlayPause) {
-    playPauseButton.className = newPlayPause;
-  }
-
-  const newSpeed = `speed${speed + 1}`;
-  if (speedButton.className !== newSpeed) {
-    speedButton.className = newSpeed;
-  }
-}
-
-function handleSliderInputEvent() {
-  processSliderEvent();
-}
-
-function handleSliderChangeEvent() {
-  processSliderEvent();
-}
-
-function maybeRunStep() {
-  refreshButtonState();
-  if (paused || (!rewind && currentTime >= max - dataStep)) {
-    window.setTimeout(maybeRunStep, stepDelay);
-    return;
-  } else if (rewind && currentTime <= min) {
-    paused = true;
-    window.setTimeout(maybeRunStep, stepDelay);
-    return;
-  }
-  currentTime += (stepMultiplier * dataStep) * (rewind ? -1 : 1);
-  currentTime = Math.max(min, Math.min(currentTime, max - dataStep));
-  redraw();
-  window.setTimeout(maybeRunStep, stepDelay);
-}
-
-function handleMouseOver(e) {
-  if (clickedCounty) {
-    return;
-  }
-
-  const rect = canvas.getBoundingClientRect();
-  const offsetTop = rect.top;
-  const offsetLeft = rect.left;
-
-  const ratio = 1 / (canvas.width / (960 * devicePixelRatio));
-  const x = Math.floor(ratio * (e.clientX - offsetLeft));
-  const y = Math.floor(ratio * (e.clientY - offsetTop));
-
-  if (clicks16) {
-    const id = clicks16[(x * 600) + y];
-    selectedCounty = id;
-  }
-  refreshHoverText();
-}
-
-function handleMouseOut() {
-  if (clickedCounty) {
-    return;
-  }
-  selectedCounty = 0;
-  refreshHoverText();
-}
-
-function handleCanvasClick(e) {
-  const rect = canvas.getBoundingClientRect();
-  const offsetTop = rect.top;
-  const offsetLeft = rect.left;
-
-  const ratio = 1 / (canvas.width / (960 * devicePixelRatio));
-  const x = Math.floor(ratio * (e.clientX - offsetLeft));
-  const y = Math.floor(ratio * (e.clientY - offsetTop));
-
-  if (clicks16) {
-    const id = clicks16[(x * 600) + y];
-    if (id > 0) {
-      selectedCounty = id;
-    } else {
-      selectedCounty = 0;
-    }
-  }
-  if (clickedCounty === selectedCounty) {
-    clickedCounty = 0;
-  } else {
-    clickedCounty = selectedCounty;
-  }
-
-  updateSelectionSvg();
-  refreshHoverText();
-}
-
-function drawBaseMap() {
-  if (!us.objects) {
-    return;
-  }
-  if (!meshed) {
-    meshed = topojson.mesh(us);
-  }
-  if (!nation) {
-    nation = topojson.feature(us, us.objects.nation);
-  }
-  context.beginPath();
-  context.fillStyle = '#cccccc';
-  canvasPath(nation);
-  context.fill();
-
-  context.beginPath();
-  context.strokeStyle = '#ffffff';
-  context.lineWidth = 0.5;
-  canvasPath(meshed);
-  context.stroke();
-}
-
-function loadClickMap(buffer) {
-  clicks16 = new Uint16Array(buffer);
-}
-
-function loadWeatherData(buffer) {
-  arr32 = new Uint32Array(buffer, 0, (buffer.byteLength - (buffer.byteLength % 4)) / 4);
-  arr16 = new Uint16Array(buffer);
-}
-
-function sizeCanvas() {
-  const w = Math.min(860, window.innerWidth);
-  const h = Math.max(300, Math.min(600, window.innerHeight - 100));
-  const width = w * 0.625 < h ? w : h / 0.625;
-  const height = width * 0.625;
-
-  canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
-  canvas.width = devicePixelRatio * width;
-  canvas.height = devicePixelRatio * height;
-  svg.attr('width', width);
-  svg.attr('height', height);
-  scaleFactor = width / 960;
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.strokeStyle = '#ffffff';
-  context.lineWidth = 0.5;
-  context.scale(devicePixelRatio * scaleFactor, devicePixelRatio * scaleFactor);
-  if (us) {
-    drawBaseMap();
-    redraw(true);
-  }
-}
-
-function handlePlayPauseResetClick() {
-  if (rewind) {
-    speed = speedBeforeRewind;
-    resetStepForSpeed();
-  }
-
-  if (currentTime >= max - dataStep) {
-    currentTime = min;
-    rewind = false;
-    paused = false;
-  } else {
-    rewind = false;
-    paused = !paused;
-  }
-}
-
-function handleBackwardClick() {
-  if (rewind) {
-    speed = speedBeforeRewind;
-    resetStepForSpeed();
-  }
-  if (currentTime === min) {
-    return;
-  }
-  rewind = false;
-  paused = true;
-  currentTime -= dataStep;
-  redraw();
-}
-
-function handleForwardClick() {
-  if (rewind) {
-    speed = speedBeforeRewind;
-    resetStepForSpeed();
-  }
-  if (currentTime === max - dataStep) {
-    return;
-  }
-  rewind = false;
-  paused = true;
-  currentTime += dataStep;
-  redraw();
-}
-
-function handleSpeedClick() {
-  speed = (speed + 1) % 5;
-  resetStepForSpeed();
-  redraw();
-}
-
-function resetStepForSpeed() {
-  switch (speed) {
-    case 0:
-      stepDelay = 96;
-      stepMultiplier = 1;
-      break;
-    case 1:
-      stepDelay = 48;
-      stepMultiplier = 1;
-      break;
-    case 2:
-      stepDelay = 24;
-      stepMultiplier = 1;
-      break;
-    case 3:
-      stepDelay = 24;
-      stepMultiplier = 2;
-      break;
-    case 4:
-      stepDelay = 24;
-      stepMultiplier = 4;
-      break;
-    default:
-      stepDelay = 24;
-      stepMultiplier = 1;
-      break;
-  }
-  const numSteps = (max - min) / dataStep;
-  let currentSteps = (currentTime - min) / dataStep;
-  currentSteps += (currentSteps % stepMultiplier);
-  currentSteps = Math.min(numSteps - 1, currentSteps);
-  currentTime = min + (currentSteps * dataStep);
-}
-
-function handleRewindClick() {
-  if (currentTime <= min) {
-    rewind = false;
-    return;
-  }
-  if (rewind) {
-    speed = Math.min(4, speed + 1);
-    resetStepForSpeed();
-  } else {
-    speedBeforeRewind = speed;
-  }
-  rewind = true;
-  paused = false;
-}
-
-function loadMapData(usData) {
-  us = usData;
-  const counties = topojson.feature(us, us.objects.counties).features;
-
-  for (let i = 0; i < counties.length; i += 1) {
-    countyFeatures[Number(counties[i].id)] = counties[i];
-  }
-
-  drawBaseMap();
 }
 
 if (checkFetchAndPromiseSupport()) {
@@ -605,29 +586,45 @@ function getBuf(r) {
 }
 
 function main() {
-  const weather = fetch('data/weather-type-2018.dat').then(getBuf).then(b => loadWeatherData(b));
-  const clicks = fetch('data/clicks.dat').then(getBuf).then(b => loadClickMap(b));
-  const alerts = fetch('data/alert-names.json').then(getJson).then((j) => { alertNames = j; });
-  const counties = fetch('data/county-names.json').then(getJson).then((j) => { countyNames = j; });
-  const map = fetch('data/10m.json').then(getJson).then(j => loadMapData(j));
+  let weatherResult;
+  let clicksResult;
+  let alertsResult;
+  let countiesResult;
+  let mapResult;
 
-  document.getElementById('slider').addEventListener('change', handleSliderChangeEvent);
-  document.getElementById('slider').addEventListener('input', handleSliderInputEvent);
-  playPauseButton.addEventListener('click', handlePlayPauseResetClick);
-  forwardButton.addEventListener('click', handleForwardClick);
-  backButton.addEventListener('click', handleBackwardClick);
-  speedButton.addEventListener('click', handleSpeedClick);
-  rewindButton.addEventListener('click', handleRewindClick);
+  const weather = fetch('data/weather-type-2018.dat')
+    .then(getBuf).then((r) => { weatherResult = r; });
+  const clicks = fetch('data/clicks.dat')
+    .then(getBuf).then((r) => { clicksResult = r; });
+  const alerts = fetch('data/alert-names.json')
+    .then(getJson).then((r) => { alertsResult = r; });
+  const counties = fetch('data/county-names.json')
+    .then(getJson).then((r) => { countiesResult = r; });
+  const map = fetch('data/10m.json').then(getJson).then((r) => { mapResult = r; });
 
-  window.addEventListener('resize', sizeCanvas);
-  window.addEventListener('orientationchange', sizeCanvas);
-  canvas.addEventListener('mouseover', handleMouseOver);
-  canvas.addEventListener('mousemove', handleMouseOver);
-  canvas.addEventListener('mouseout', handleMouseOut);
-  canvas.addEventListener('click', handleCanvasClick);
-  sizeCanvas();
+  Promise.all([weather, clicks, alerts, counties, map]).then(() =>
+    init(weatherResult, clicksResult, alertsResult, countiesResult, mapResult));
+}
 
-  Promise.all([weather, clicks, alerts, counties, map]).then(() => maybeRunStep());
+function init(weather, clicks, alerts, counties, map) {
+  const weatherMap = new WeatherMap(weather, clicks, alerts, counties, map);
+  weatherMap.sizeCanvas();
+  weatherMap.maybeRunStep();
+
+  document.getElementById('slider').addEventListener('change', (e) => { weatherMap.handleSliderChangeEvent(e); });
+  document.getElementById('slider').addEventListener('input', (e) => { weatherMap.handleSliderInputEvent(e); });
+  playPauseButton.addEventListener('click', () => weatherMap.handlePlayPauseResetClick());
+  forwardButton.addEventListener('click', () => weatherMap.handleForwardClick());
+  backButton.addEventListener('click', () => weatherMap.handleBackwardClick());
+  speedButton.addEventListener('click', () => weatherMap.handleSpeedClick());
+  rewindButton.addEventListener('click', () => weatherMap.handleRewindClick());
+
+  window.addEventListener('resize', () => weatherMap.sizeCanvas());
+  window.addEventListener('orientationchange', (e) => { weatherMap.sizeCanvas(e); });
+  canvas.addEventListener('mouseover', (e) => { weatherMap.handleMouseOver(e); });
+  canvas.addEventListener('mousemove', (e) => { weatherMap.handleMouseOver(e); });
+  canvas.addEventListener('mouseout', (e) => { weatherMap.handleMouseOut(e); });
+  canvas.addEventListener('click', (e) => { weatherMap.handleCanvasClick(e); });
 }
 
 function loadPolyfills(callback) {
