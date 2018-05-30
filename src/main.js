@@ -6,9 +6,174 @@ function datePad(v) {
   return v < 10 ? `0${v}` : v;
 }
 
+class AlertTypeHelper {
+  constructor(types, alertTypeNames, alertTypeShortNames, alertTypeCodes, alertColors) {
+    this.types = types;
+    this.alertTypeNames = alertTypeNames;
+    this.alertTypeShortNames = alertTypeShortNames;
+    this.alertTypeCodes = alertTypeCodes;
+    this.alertColors = alertColors;
+  }
+
+  getColor(alertNumber) {
+    const alertString =
+      this.types[alertNumber & 0xff] + this.alertTypeCodes[alertNumber & 0xff00];
+    return this.alertColors[alertString] || '#cccccc';
+  }
+}
+
+class UsMap {
+  constructor(data, canvas, svg, clicks, alertTypeHelper) {
+    this.canvas = canvas;
+    this.context = canvas.getContext('2d');
+    this.canvasPath = d3.geoPath().context(this.context);
+    this.svg = svg;
+    this.path = d3.geoPath();
+    this.us = data;
+    this.alertTypeHelper = alertTypeHelper;
+    this.clicks16 = new Uint16Array(clicks);
+
+    this.renderedCounties = {};
+
+    const countyFeatures = [];
+    const countyTopojson = topojson.feature(this.us, this.us.objects.counties).features;
+
+    for (let i = 0; i < countyTopojson.length; i += 1) {
+      countyFeatures[Number(countyTopojson[i].id)] = countyTopojson[i];
+    }
+    this.countyFeatures = countyFeatures;
+
+    this.meshed = topojson.mesh(this.us);
+    this.nation = topojson.feature(this.us, this.us.objects.nation);
+
+    canvas.addEventListener('mouseover', (e) => { this.handleMouseover(e); });
+    canvas.addEventListener('mousemove', (e) => { this.handleMouseover(e); });
+    canvas.addEventListener('mouseout', (e) => { this.handleMouseout(e); });
+    canvas.addEventListener('click', (e) => { this.handleClick(e); });
+  }
+
+  handleMouseover(e) {
+    if (this.mouseoverCallback) {
+      this.mouseoverCallback(this.getCountyIdForMouseCoords(e));
+    }
+  }
+
+  handleMouseout() {
+    if (this.mouseoutCallback) {
+      this.mouseoutCallback();
+    }
+  }
+
+  handleClick(e) {
+    if (this.clickCallback) {
+      this.clickCallback(this.getCountyIdForMouseCoords(e));
+    }
+  }
+
+  getCountyIdForMouseCoords(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const offsetTop = rect.top;
+    const offsetLeft = rect.left;
+
+    const ratio = 1 / (this.canvas.width / (960 * devicePixelRatio));
+    const x = Math.floor(ratio * (e.clientX - offsetLeft));
+    const y = Math.floor(ratio * (e.clientY - offsetTop));
+    return this.clicks16[(x * 600) + y];
+  }
+
+  drawBaseMap() {
+    this.context.beginPath();
+    this.context.fillStyle = '#cccccc';
+    this.canvasPath(this.nation);
+    this.context.fill();
+
+    this.context.beginPath();
+    this.context.strokeStyle = '#ffffff';
+    this.context.lineWidth = 0.5;
+    this.canvasPath(this.meshed);
+    this.context.stroke();
+  }
+
+  sizeCanvas() {
+    const w = Math.min(860, window.innerWidth);
+    const h = Math.max(300, Math.min(600, window.innerHeight - 100));
+    const width = w * 0.625 < h ? w : h / 0.625;
+    const height = width * 0.625;
+
+    this.canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
+    this.canvas.width = devicePixelRatio * width;
+    this.canvas.height = devicePixelRatio * height;
+    this.svg.attr('width', width);
+    this.svg.attr('height', height);
+    this.scaleFactor = width / 960;
+    this.context.setTransform(1, 0, 0, 1, 0, 0);
+    this.context.strokeStyle = '#ffffff';
+    this.context.lineWidth = 0.5;
+    this.context.scale(devicePixelRatio * this.scaleFactor, devicePixelRatio * this.scaleFactor);
+    this.drawBaseMap();
+    this.redraw(this.renderedCounties, true);
+  }
+
+  updateSelectionSvg(clickedCounty) {
+    this.svg.selectAll('*').remove();
+    if (clickedCounty) {
+      this.svg.append('path')
+        .attr('class', 'selectedCounty')
+        .attr('d', this.path(this.countyFeatures[clickedCounty]));
+    }
+  }
+
+  drawCounty(countyId, fillStyle) {
+    this.context.fillStyle = fillStyle;
+    this.context.beginPath();
+    this.canvasPath(this.countyFeatures[countyId]);
+    this.context.fill();
+    this.context.stroke();
+  }
+
+  setClickCallback(callback) {
+    this.clickCallback = callback;
+  }
+
+  setMouseoverCallback(callback) {
+    this.mouseoverCallback = callback;
+  }
+
+  setMouseoutCallback(callback) {
+    this.mouseoutCallback = callback;
+  }
+
+  redraw(newValues, ignorePreviousState) {
+    const changes = {};
+
+    const previousKeys = Object.keys(this.renderedCounties);
+    for (let i = 0; i < previousKeys.length; i += 1) {
+      changes[previousKeys[i]] = [];
+    }
+    const newKeys = Object.keys(newValues);
+    for (let i = 0; i < newKeys.length; i += 1) {
+      changes[newKeys[i]] = newValues[newKeys[i]];
+    }
+
+    const changeKeys = Object.keys(changes);
+    for (let i = 0; i < changeKeys.length; i += 1) {
+      const countyId = changeKeys[i];
+      const alertForMap = changes[countyId] ? changes[countyId][0] : 0;
+      const previousAlertForMap =
+        this.renderedCounties[countyId] ? this.renderedCounties[countyId][0] : 0;
+      if (ignorePreviousState || alertForMap !== previousAlertForMap) {
+        const color = this.alertTypeHelper.getColor(alertForMap);
+        this.drawCounty(countyId, color);
+      }
+    }
+
+    this.renderedCounties = newValues;
+  }
+}
+
 class WeatherMap {
   constructor(
-    weather, clicks, alerts, counties, map, legend, canvas, svg,
+    weather, alerts, counties, legend, usMap,
     rewindButton, backButton, playPauseButton, forwardButton, speedButton,
     types, alertTypeNames, alertTypeShortNames, alertTypeCodes, alertColors,
   ) {
@@ -18,11 +183,8 @@ class WeatherMap {
     this.max = this.arr32[1] * 1000;
     this.dataStep = this.arr32[2] * 1000;
     this.legend = legend;
-    this.canvas = canvas;
-    this.context = canvas.getContext('2d');
-    this.canvasPath = d3.geoPath().context(this.context);
-    this.svg = svg;
-    this.path = d3.geoPath();
+    this.usMap = usMap;
+
     this.rewindButton = rewindButton;
     this.backButton = backButton;
     this.playPauseButton = playPauseButton;
@@ -33,23 +195,12 @@ class WeatherMap {
     this.alertTypeCodes = alertTypeCodes;
     this.alertColors = alertColors;
 
-    // XXX: should be slider's max.
+    // TODO(jdhollen): this should programatically be slider's max.
     this.positionSteps = 1000;
 
     this.countyNames = counties;
     this.alertNames = alerts;
-    this.clicks16 = new Uint16Array(clicks);
-    this.us = map;
-    const countyFeatures = [];
-    const countyTopojson = topojson.feature(this.us, this.us.objects.counties).features;
 
-    for (let i = 0; i < countyTopojson.length; i += 1) {
-      countyFeatures[Number(countyTopojson[i].id)] = countyTopojson[i];
-    }
-    this.meshed = topojson.mesh(this.us);
-    this.nation = topojson.feature(this.us, this.us.objects.nation);
-
-    this.countyFeatures = countyFeatures;
     this.selectedCounty = 0;
     this.clickedCounty = 0;
     this.previous = {};
@@ -62,6 +213,10 @@ class WeatherMap {
     this.rewind = false;
 
     this.currentTime = this.min;
+
+    usMap.setClickCallback((id) => { this.handleCanvasClick(id); });
+    usMap.setMouseoverCallback((id) => { this.handleMouseOver(id); });
+    usMap.setMouseoutCallback(() => { this.handleMouseOut(); });
   }
 
   timeToPosition() {
@@ -107,24 +262,9 @@ class WeatherMap {
     this.legend.innerHTML = `<span class="legendTitle">${fullName}</span>${alerts}`;
   }
 
-  updateSelectionSvg() {
-    this.svg.selectAll('*').remove();
-    if (this.clickedCounty) {
-      this.svg.append('path')
-        .attr('class', 'selectedCounty')
-        .attr('d', this.path(this.countyFeatures[this.clickedCounty]));
-    }
-  }
-
-  redraw(ignorePreviousState) {
+  redraw() {
     const newValue = (this.currentTime - this.min) / this.dataStep;
     const newClasses = {};
-    const changes = {};
-
-    const previousKeys = Object.keys(this.previous);
-    for (let i = 0; i < previousKeys.length; i += 1) {
-      changes[previousKeys[i]] = [];
-    }
 
     let index16 = this.arr32[3 + newValue];
 
@@ -140,29 +280,15 @@ class WeatherMap {
         const county = this.arr16[i];
         if (!newClasses[county]) {
           newClasses[county] = [av];
-          changes[county] = [av];
         } else {
           newClasses[county].push(av);
-          changes[county].push(av);
         }
       }
       index16 += length;
     }
 
-    const changeKeys = Object.keys(changes);
-    for (let i = 0; i < changeKeys.length; i += 1) {
-      const countyId = changeKeys[i];
-      const alertForMap = changes[countyId] ? changes[countyId][0] : '';
-      const previousAlertForMap = this.previous[countyId] ? this.previous[countyId][0] : '';
-      if (ignorePreviousState || alertForMap !== previousAlertForMap) {
-        const alertString =
-          this.types[alertForMap & 0xff] + this.alertTypeCodes[alertForMap & 0xff00];
-        const color = this.alertColors[alertString] || '#cccccc';
-        this.drawCounty(this.countyFeatures[countyId], color);
-      }
-    }
-
-    this.updateSelectionSvg();
+    this.usMap.redraw(newClasses);
+    this.usMap.updateSelectionSvg(this.clickedCounty);
 
     this.previous = newClasses;
     document.getElementById('time').textContent = this.getDateText();
@@ -227,66 +353,31 @@ class WeatherMap {
     window.setTimeout(() => { this.maybeRunStep(); }, this.stepDelay);
   }
 
-  handleMouseOver(e) {
+  handleMouseOver(id) {
     if (this.clickedCounty) {
       return;
     }
 
-    const rect = this.canvas.getBoundingClientRect();
-    const offsetTop = rect.top;
-    const offsetLeft = rect.left;
-
-    const ratio = 1 / (this.canvas.width / (960 * devicePixelRatio));
-    const x = Math.floor(ratio * (e.clientX - offsetLeft));
-    const y = Math.floor(ratio * (e.clientY - offsetTop));
-
-    if (this.clicks16) {
-      const id = this.clicks16[(x * 600) + y];
-      this.selectedCounty = id;
-    }
+    this.selectedCounty = id;
     this.refreshHoverText();
   }
 
-  handleCanvasClick(e) {
-    const rect = this.canvas.getBoundingClientRect();
-    const offsetTop = rect.top;
-    const offsetLeft = rect.left;
-
-    const ratio = 1 / (this.canvas.width / (960 * devicePixelRatio));
-    const x = Math.floor(ratio * (e.clientX - offsetLeft));
-    const y = Math.floor(ratio * (e.clientY - offsetTop));
-
-    if (this.clicks16) {
-      const id = this.clicks16[(x * 600) + y];
-      if (id > 0) {
-        this.selectedCounty = id;
-      } else {
-        this.selectedCounty = 0;
-      }
+  handleCanvasClick(id) {
+    if (id > 0) {
+      this.selectedCounty = id;
+    } else {
+      this.selectedCounty = 0;
     }
+
     if (this.clickedCounty === this.selectedCounty) {
       this.clickedCounty = 0;
     } else {
       this.clickedCounty = this.selectedCounty;
     }
 
-    this.updateSelectionSvg();
+    this.usMap.updateSelectionSvg(this.clickedCounty);
     this.refreshHoverText();
   }
-
-  drawBaseMap() {
-    this.context.beginPath();
-    this.context.fillStyle = '#cccccc';
-    this.canvasPath(this.nation);
-    this.context.fill();
-
-    this.context.beginPath();
-    this.context.strokeStyle = '#ffffff';
-    this.context.lineWidth = 0.5;
-    this.canvasPath(this.meshed);
-    this.context.stroke();
-  }
-
 
   handleSliderInputEvent() {
     this.processSliderEvent();
@@ -302,28 +393,6 @@ class WeatherMap {
     }
     this.selectedCounty = 0;
     this.refreshHoverText();
-  }
-
-  sizeCanvas() {
-    const w = Math.min(860, window.innerWidth);
-    const h = Math.max(300, Math.min(600, window.innerHeight - 100));
-    const width = w * 0.625 < h ? w : h / 0.625;
-    const height = width * 0.625;
-
-    this.canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
-    this.canvas.width = devicePixelRatio * width;
-    this.canvas.height = devicePixelRatio * height;
-    this.svg.attr('width', width);
-    this.svg.attr('height', height);
-    this.scaleFactor = width / 960;
-    this.context.setTransform(1, 0, 0, 1, 0, 0);
-    this.context.strokeStyle = '#ffffff';
-    this.context.lineWidth = 0.5;
-    this.context.scale(devicePixelRatio * this.scaleFactor, devicePixelRatio * this.scaleFactor);
-    if (this.us) {
-      this.drawBaseMap();
-      this.redraw(true);
-    }
   }
 
   handlePlayPauseResetClick() {
@@ -423,14 +492,6 @@ class WeatherMap {
     }
     this.rewind = true;
     this.paused = false;
-  }
-
-  drawCounty(county, fillStyle) {
-    this.context.fillStyle = fillStyle;
-    this.context.beginPath();
-    this.canvasPath(county);
-    this.context.fill();
-    this.context.stroke();
   }
 }
 
@@ -601,12 +662,17 @@ function init(weather, clicks, alerts, counties, map) {
   // Initialize the map, start it running, and then hook up event listeners.
   // Bluntly, it's more straightforward to not handle user input for a bit than
   // it is to receive the events but do nothing.
+  const alertTypeHelper = new AlertTypeHelper(
+    types, alertTypeNames, alertTypeShortNames,
+    alertTypeCodes, alertColors,
+  );
+  const usMap = new UsMap(map, canvas, svg, clicks, alertTypeHelper);
   const weatherMap = new WeatherMap(
-    weather, clicks, alerts, counties, map, legend, canvas, svg,
+    weather, alerts, counties, legend, usMap,
     rewindButton, backButton, playPauseButton, forwardButton, speedButton,
     types, alertTypeNames, alertTypeShortNames, alertTypeCodes, alertColors,
   );
-  weatherMap.sizeCanvas();
+  usMap.sizeCanvas();
   weatherMap.maybeRunStep();
 
   document.getElementById('slider').addEventListener('change', (e) => { weatherMap.handleSliderChangeEvent(e); });
@@ -617,12 +683,8 @@ function init(weather, clicks, alerts, counties, map) {
   speedButton.addEventListener('click', () => weatherMap.handleSpeedClick());
   rewindButton.addEventListener('click', () => weatherMap.handleRewindClick());
 
-  window.addEventListener('resize', () => weatherMap.sizeCanvas());
-  window.addEventListener('orientationchange', (e) => { weatherMap.sizeCanvas(e); });
-  canvas.addEventListener('mouseover', (e) => { weatherMap.handleMouseOver(e); });
-  canvas.addEventListener('mousemove', (e) => { weatherMap.handleMouseOver(e); });
-  canvas.addEventListener('mouseout', (e) => { weatherMap.handleMouseOut(e); });
-  canvas.addEventListener('click', (e) => { weatherMap.handleCanvasClick(e); });
+  window.addEventListener('resize', () => usMap.sizeCanvas());
+  window.addEventListener('orientationchange', (e) => { usMap.sizeCanvas(e); });
 }
 
 function loadPolyfills(callback) {
