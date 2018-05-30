@@ -7,12 +7,35 @@ function datePad(v) {
 }
 
 class AlertTypeHelper {
-  constructor(types, alertTypeNames, alertTypeShortNames, alertTypeCodes, alertColors) {
+  constructor(types, alertTypeNames, alertTypeShortNames, alertTypeCodes, alertColors, alertNames) {
     this.types = types;
     this.alertTypeNames = alertTypeNames;
     this.alertTypeShortNames = alertTypeShortNames;
     this.alertTypeCodes = alertTypeCodes;
     this.alertColors = alertColors;
+    this.alertNames = alertNames;
+  }
+
+  getFullName(alertNumber) {
+    const alertId = alertNumber & 0xff;
+    const alertType = alertNumber & 0xff00;
+    const alert = this.alertNames[this.types[alertId]];
+    if (!alert) {
+      return '';
+    }
+
+    return `${alert} ${this.alertTypeNames[alertType]}`;
+  }
+
+  getShortName(alertNumber) {
+    const alertId = alertNumber & 0xff;
+    const alertType = alertNumber & 0xff00;
+    const alert = this.alertNames[this.types[alertId]];
+    if (!alert) {
+      return '';
+    }
+
+    return `${alert} ${this.alertTypeShortNames[alertType]}`;
   }
 
   getColor(alertNumber) {
@@ -173,9 +196,9 @@ class UsMap {
 
 class WeatherMap {
   constructor(
-    weather, alerts, counties, legend, usMap,
+    weather, counties, legend, usMap,
     rewindButton, backButton, playPauseButton, forwardButton, speedButton,
-    types, alertTypeNames, alertTypeShortNames, alertTypeCodes, alertColors,
+    alertTypeHelper,
   ) {
     this.arr32 = new Uint32Array(weather, 0, (weather.byteLength - (weather.byteLength % 4)) / 4);
     this.arr16 = new Uint16Array(weather);
@@ -190,16 +213,12 @@ class WeatherMap {
     this.playPauseButton = playPauseButton;
     this.forwardButton = forwardButton;
     this.speedButton = speedButton;
-    this.types = types;
-    this.alertTypeNames = alertTypeNames;
-    this.alertTypeCodes = alertTypeCodes;
-    this.alertColors = alertColors;
+    this.alertTypeHelper = alertTypeHelper;
 
     // TODO(jdhollen): this should programatically be slider's max.
     this.positionSteps = 1000;
 
     this.countyNames = counties;
-    this.alertNames = alerts;
 
     this.selectedCounty = 0;
     this.clickedCounty = 0;
@@ -237,7 +256,6 @@ class WeatherMap {
       this.legend.innerHTML = '<span class="legendTitle">Select a county to see alerts.</span>';
       return;
     }
-
     const stateName = this.countyNames[this.selectedCounty - (this.selectedCounty % 1000)];
     const fullName = `${this.countyNames[this.selectedCounty]}, ${stateName}`;
     const classes = this.previous[this.selectedCounty] || [];
@@ -245,14 +263,12 @@ class WeatherMap {
     let alerts = '';
     for (let i = 0; i < classes.length; i += 1) {
       const av = classes[i];
-      const alertId = av & 0xff;
-      const alertType = av & 0xff00;
-      const alert = this.alertNames[this.types[alertId]];
-      const alertColor = this.alertColors[`${this.types[alertId]}${this.alertTypeCodes[alertType]}`];
-      const alertSuffix = (window.innerWidth >= 375)
-        ? this.alertTypeNames[alertType] : this.alertTypeShortNames[alertType];
+
+      const alertColor = this.alertTypeHelper.getColor(av);
+      const alert = (window.innerWidth >= 375)
+        ? this.alertTypeHelper.getFullName(av) : this.alertTypeHelper.getShortName(av);
       if (alert) {
-        alerts = alerts.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert} ${alertSuffix}</div>`);
+        alerts = alerts.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert}</div>`);
       }
     }
     if (!alerts) {
@@ -664,13 +680,13 @@ function init(weather, clicks, alerts, counties, map) {
   // it is to receive the events but do nothing.
   const alertTypeHelper = new AlertTypeHelper(
     types, alertTypeNames, alertTypeShortNames,
-    alertTypeCodes, alertColors,
+    alertTypeCodes, alertColors, alerts,
   );
   const usMap = new UsMap(map, canvas, svg, clicks, alertTypeHelper);
   const weatherMap = new WeatherMap(
-    weather, alerts, counties, legend, usMap,
+    weather, counties, legend, usMap,
     rewindButton, backButton, playPauseButton, forwardButton, speedButton,
-    types, alertTypeNames, alertTypeShortNames, alertTypeCodes, alertColors,
+    alertTypeHelper,
   );
   usMap.sizeCanvas();
   weatherMap.maybeRunStep();
