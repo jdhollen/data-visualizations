@@ -1,175 +1,40 @@
 /* global d3: false, topojson: false */
 /* eslint-env browser */
-/* eslint no-use-before-define: ['error', 'nofunc'] */
 /* eslint no-bitwise: ['error', { 'allow': ['&', '|'] }] */
 
-/*
- * A canvas is used to render the actual alert map and county colors because
- * canvas rendering performs better than SVGs (way less memory used than
- * creating 3000 paths).  We only use an SVG for rendering the user's selection.
- */
-const canvas = document.getElementById('map');
-const context = canvas.getContext('2d');
-const canvasPath = d3.geoPath().context(context);
-
-/*
- * An SVG is used to render the red selection outline for counties.  On the
- * canvas, when we draw outlines / shade in counties, we just "re-stamp" the
- * county shape over the map.  Drawing a red border in the canvas leads to
- * anti-aliasing, which leaves behind a weird red feathering effect when a
- * county is deselected.  Using an SVG just for selection makes the selection
- * look sharp without paying the price of rendering the whole map in SVG land.
- */
-const svg = d3.select('#svg');
-const path = d3.geoPath();
-
-// Grab a bunch of DOM elements, yada yada.
-const rewindButton = document.getElementById('rewind');
-const backButton = document.getElementById('oneBackward');
-const playPauseButton = document.getElementById('playPause');
-const forwardButton = document.getElementById('oneForward');
-const speedButton = document.getElementById('speed');
-const legend = document.getElementById('legend');
-
-const min = 1514764800000;
-const max = 1526947200000;
-const dataStep = 15 * 60 * 1000;
-const positionSteps = 1000;
-
-const alertTypeNames = {
-  0x8000: 'Warning',
-  0x4000: 'Advisory',
-  0x2000: 'Watch',
-  0x1000: 'Statement',
-};
-
-const alertTypeShortNames = {
-  0x8000: 'Wrn',
-  0x4000: 'Adv',
-  0x2000: 'Wtch',
-  0x1000: 'Stmt',
-};
-
-const alertTypeCodes = {
-  0x8000: 'W',
-  0x4000: 'Y',
-  0x2000: 'A',
-  0x1000: 'S',
-};
-
-const types = [
-  'NONE',
-  'RH', 'VO', 'AF', 'TS', 'TO', 'HU', 'TY', 'EW', 'HF', 'HI', 'TR', 'SV', 'BZ',
-  'SQ', 'WS', 'DS', 'WW', 'IS', 'LB', 'LE', 'HS', 'HP', 'SS', 'FF', 'SB', 'SN',
-  'BS', 'IP', 'ZR', 'SR', 'GL', 'TI', 'SM', 'AV', 'DU', 'CF', 'LS', 'FA', 'FL',
-  'HY', 'ZF', 'FG', 'FW', 'HW', 'WI', 'EC', 'EH', 'HZ', 'HT', 'FZ', 'LW', 'WC',
-  'UP', 'SE', 'SU', 'BH', 'LO', 'MA', 'SC', 'SI', 'RB', 'FR', 'AS', 'RP'];
-
-const alertColors = {
-  ASY: '#808080',
-  AFY: '#696969',
-  AFW: '#A9A9A9',
-  AVY: '#CD853F',
-  AVW: '#1E90FF',
-  AVA: '#F4A460',
-  BHS: '#40E0D0',
-  BZW: '#FF4500',
-  BZA: '#ADFF2F',
-  DUY: '#BDB76B',
-  CFY: '#7CFC00',
-  CFS: '#6B8E23',
-  CFW: '#228B22',
-  CFA: '#66CDAA',
-  FGY: '#708090',
-  SMY: '#F0E68C',
-  DSW: '#FFE4C4',
-  EHW: '#C71585',
-  EHA: '#800000',
-  ECW: '#0000FF',
-  ECA: '#0000FF',
-  EWW: '#FF8C00',
-  FFS: '#8B0000',
-  FFW: '#8B0000',
-  FFA: '#2E8B57',
-  FLY: '#00FF7F',
-  FLS: '#00FF00',
-  FLW: '#00FF00',
-  FLA: '#2E8B57',
-  FZW: '#483D8B',
-  FZA: '#00FFFF',
-  ZFY: '#008080',
-  ZRY: '#DA70D6',
-  FRY: '#6495ED',
-  GLW: '#DDA0DD',
-  GLA: '#FFC0CB',
-  HZW: '#9400D3',
-  HZA: '#4169E1',
-  SEW: '#D8BFD8',
-  SEA: '#483D8B',
-  HTY: '#FF7F50',
-  SUY: '#BA55D3',
-  SUW: '#228B22',
-  HWW: '#DAA520',
-  HWA: '#B8860B',
-  HFW: '#CD5C5C',
-  HIW: '#CD5C5C',
-  HFA: '#9932CC',
-  HUW: '#DC143C',
-  HUA: '#FF00FF',
-  HYY: '#00FF7F',
-  ISW: '#8B008B',
-  LEY: '#48D1CC',
-  LEW: '#008B8B',
-  LEA: '#87CEFA',
-  LWY: '#D2B48C',
-  LSY: '#7CFC00',
-  LSS: '#6B8E23',
-  LSW: '#228B22',
-  LSA: '#66CDAA',
-  LOY: '#A52A2A',
-  MAS: '#FFDAB9',
-  RHW: '#4B0082',
-  FWW: '#FF1493',
-  RPS: '#40E0D0',
-  SSS: '#8B0000',
-  SSW: '#8B0000',
-  SSA: '#2E8B57',
-  SSY: '#2E8B57',
-  SVW: '#FFA500',
-  SVA: '#DB7093',
-  SVS: '#00FFFF',
-  SCY: '#D8BFD8',
-  RBY: '#D8BFD8',
-  SIY: '#D8BFD8',
-  SRW: '#9400D3',
-  SRA: '#FFE4B5',
-  TOW: '#FF0000',
-  TOA: '#FFFF00',
-  TRW: '#B22222',
-  TRA: '#F08080',
-  TSY: '#D2691E',
-  TSW: '#FD6347',
-  TSA: '#FF00FF',
-  TYW: '#DC143C',
-  TYA: '#FF00FF',
-  VOW: '#2F4F4F',
-  WIY: '#D2B48C',
-  WCY: '#AFEEEE',
-  WCW: '#B0C4DE',
-  WCA: '#5F9EA0',
-  WSW: '#FF69B4',
-  WSA: '#4682B4',
-  WWY: '#7B68EE',
-  FAY: '#00FF7F',
-  FAS: '#00FF00',
-  FAW: '#00FF00',
-  FAA: '#2E8B57',
-};
+function datePad(v) {
+  return v < 10 ? `0${v}` : v;
+}
 
 class WeatherMap {
-  constructor(weather, clicks, alerts, counties, map) {
+  constructor(
+    weather, clicks, alerts, counties, map, legend, canvas, svg,
+    rewindButton, backButton, playPauseButton, forwardButton, speedButton,
+    types, alertTypeNames, alertTypeShortNames, alertTypeCodes, alertColors,
+  ) {
     this.arr32 = new Uint32Array(weather, 0, (weather.byteLength - (weather.byteLength % 4)) / 4);
     this.arr16 = new Uint16Array(weather);
+    this.min = this.arr32[0] * 1000;
+    this.max = this.arr32[1] * 1000;
+    this.dataStep = this.arr32[2] * 1000;
+    this.legend = legend;
+    this.canvas = canvas;
+    this.context = canvas.getContext('2d');
+    this.canvasPath = d3.geoPath().context(this.context);
+    this.svg = svg;
+    this.path = d3.geoPath();
+    this.rewindButton = rewindButton;
+    this.backButton = backButton;
+    this.playPauseButton = playPauseButton;
+    this.forwardButton = forwardButton;
+    this.speedButton = speedButton;
+    this.types = types;
+    this.alertTypeNames = alertTypeNames;
+    this.alertTypeCodes = alertTypeCodes;
+    this.alertColors = alertColors;
+
+    // XXX: should be slider's max.
+    this.positionSteps = 1000;
 
     this.countyNames = counties;
     this.alertNames = alerts;
@@ -196,24 +61,25 @@ class WeatherMap {
     this.stepMultiplier = 2;
     this.rewind = false;
 
-    this.currentTime = min;
+    this.currentTime = this.min;
   }
 
   timeToPosition() {
-    if (this.currentTime <= min) {
+    if (this.currentTime <= this.min) {
       return 1;
     }
-    if (this.currentTime >= max - dataStep) {
-      return positionSteps;
+    if (this.currentTime >= this.max - this.dataStep) {
+      return this.positionSteps;
     }
 
-    return (1 + positionSteps) -
-      Math.ceil(((max - dataStep - this.currentTime) / (max - dataStep - min)) * positionSteps);
+    return (1 + this.positionSteps) -
+      Math.ceil(((this.max - this.dataStep - this.currentTime)
+        / (this.max - this.dataStep - this.min)) * this.positionSteps);
   }
 
   refreshHoverText() {
     if (!this.selectedCounty) {
-      legend.innerHTML = '<span class="legendTitle">Select a county to see alerts.</span>';
+      this.legend.innerHTML = '<span class="legendTitle">Select a county to see alerts.</span>';
       return;
     }
 
@@ -226,10 +92,10 @@ class WeatherMap {
       const av = classes[i];
       const alertId = av & 0xff;
       const alertType = av & 0xff00;
-      const alert = this.alertNames[types[alertId]];
-      const alertColor = alertColors[`${types[alertId]}${alertTypeCodes[alertType]}`];
+      const alert = this.alertNames[this.types[alertId]];
+      const alertColor = this.alertColors[`${this.types[alertId]}${this.alertTypeCodes[alertType]}`];
       const alertSuffix = (window.innerWidth >= 375)
-        ? alertTypeNames[alertType] : alertTypeShortNames[alertType];
+        ? this.alertTypeNames[alertType] : this.alertTypeShortNames[alertType];
       if (alert) {
         alerts = alerts.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert} ${alertSuffix}</div>`);
       }
@@ -238,20 +104,20 @@ class WeatherMap {
       alerts = '<div class="legendItem">No alerts</div>';
     }
 
-    legend.innerHTML = `<span class="legendTitle">${fullName}</span>${alerts}`;
+    this.legend.innerHTML = `<span class="legendTitle">${fullName}</span>${alerts}`;
   }
 
   updateSelectionSvg() {
-    svg.selectAll('*').remove();
+    this.svg.selectAll('*').remove();
     if (this.clickedCounty) {
-      svg.append('path')
+      this.svg.append('path')
         .attr('class', 'selectedCounty')
-        .attr('d', path(this.countyFeatures[this.clickedCounty]));
+        .attr('d', this.path(this.countyFeatures[this.clickedCounty]));
     }
   }
 
   redraw(ignorePreviousState) {
-    const newValue = (this.currentTime - min) / dataStep;
+    const newValue = (this.currentTime - this.min) / this.dataStep;
     const newClasses = {};
     const changes = {};
 
@@ -289,9 +155,10 @@ class WeatherMap {
       const alertForMap = changes[countyId] ? changes[countyId][0] : '';
       const previousAlertForMap = this.previous[countyId] ? this.previous[countyId][0] : '';
       if (ignorePreviousState || alertForMap !== previousAlertForMap) {
-        const alertString = types[alertForMap & 0xff] + alertTypeCodes[alertForMap & 0xff00];
-        const color = alertColors[alertString] || '#cccccc';
-        drawCounty(this.countyFeatures[countyId], color);
+        const alertString =
+          this.types[alertForMap & 0xff] + this.alertTypeCodes[alertForMap & 0xff00];
+        const color = this.alertColors[alertString] || '#cccccc';
+        this.drawCounty(this.countyFeatures[countyId], color);
       }
     }
 
@@ -312,21 +179,21 @@ class WeatherMap {
   processSliderEvent() {
     const newValue = Number(document.getElementById('slider').value);
     if (newValue === 1) {
-      this.currentTime = min;
+      this.currentTime = this.min;
     } else if (newValue === 1000) {
-      this.currentTime = max - dataStep;
+      this.currentTime = this.max - this.dataStep;
     } else {
-      const stepSize = Math.floor((max - dataStep - min) / positionSteps);
+      const stepSize = Math.floor((this.max - this.dataStep - this.min) / this.positionSteps);
       const offset =
-        (stepSize * newValue) - ((stepSize * newValue) % (this.stepMultiplier * dataStep));
-      this.currentTime = min + offset;
+        (stepSize * newValue) - ((stepSize * newValue) % (this.stepMultiplier * this.dataStep));
+      this.currentTime = this.min + offset;
     }
     this.redraw();
   }
 
   refreshButtonState() {
     let newPlayPause;
-    if (this.currentTime >= max - dataStep) {
+    if (this.currentTime >= this.max - this.dataStep) {
       newPlayPause = 'reset';
     } else if (this.paused) {
       newPlayPause = 'play';
@@ -334,28 +201,28 @@ class WeatherMap {
       newPlayPause = 'pause';
     }
 
-    if (playPauseButton.className !== newPlayPause) {
-      playPauseButton.className = newPlayPause;
+    if (this.playPauseButton.className !== newPlayPause) {
+      this.playPauseButton.className = newPlayPause;
     }
 
     const newSpeed = `speed${this.speed + 1}`;
-    if (speedButton.className !== newSpeed) {
-      speedButton.className = newSpeed;
+    if (this.speedButton.className !== newSpeed) {
+      this.speedButton.className = newSpeed;
     }
   }
 
   maybeRunStep() {
     this.refreshButtonState();
-    if (this.paused || (!this.rewind && this.currentTime >= max - dataStep)) {
+    if (this.paused || (!this.rewind && this.currentTime >= this.max - this.dataStep)) {
       window.setTimeout(() => { this.maybeRunStep(); }, this.stepDelay);
       return;
-    } else if (this.rewind && this.currentTime <= min) {
+    } else if (this.rewind && this.currentTime <= this.min) {
       this.paused = true;
       window.setTimeout(() => { this.maybeRunStep(); }, this.stepDelay);
       return;
     }
-    this.currentTime += (this.stepMultiplier * dataStep) * (this.rewind ? -1 : 1);
-    this.currentTime = Math.max(min, Math.min(this.currentTime, max - dataStep));
+    this.currentTime += (this.stepMultiplier * this.dataStep) * (this.rewind ? -1 : 1);
+    this.currentTime = Math.max(this.min, Math.min(this.currentTime, this.max - this.dataStep));
     this.redraw();
     window.setTimeout(() => { this.maybeRunStep(); }, this.stepDelay);
   }
@@ -365,11 +232,11 @@ class WeatherMap {
       return;
     }
 
-    const rect = canvas.getBoundingClientRect();
+    const rect = this.canvas.getBoundingClientRect();
     const offsetTop = rect.top;
     const offsetLeft = rect.left;
 
-    const ratio = 1 / (canvas.width / (960 * devicePixelRatio));
+    const ratio = 1 / (this.canvas.width / (960 * devicePixelRatio));
     const x = Math.floor(ratio * (e.clientX - offsetLeft));
     const y = Math.floor(ratio * (e.clientY - offsetTop));
 
@@ -381,11 +248,11 @@ class WeatherMap {
   }
 
   handleCanvasClick(e) {
-    const rect = canvas.getBoundingClientRect();
+    const rect = this.canvas.getBoundingClientRect();
     const offsetTop = rect.top;
     const offsetLeft = rect.left;
 
-    const ratio = 1 / (canvas.width / (960 * devicePixelRatio));
+    const ratio = 1 / (this.canvas.width / (960 * devicePixelRatio));
     const x = Math.floor(ratio * (e.clientX - offsetLeft));
     const y = Math.floor(ratio * (e.clientY - offsetTop));
 
@@ -408,16 +275,16 @@ class WeatherMap {
   }
 
   drawBaseMap() {
-    context.beginPath();
-    context.fillStyle = '#cccccc';
-    canvasPath(this.nation);
-    context.fill();
+    this.context.beginPath();
+    this.context.fillStyle = '#cccccc';
+    this.canvasPath(this.nation);
+    this.context.fill();
 
-    context.beginPath();
-    context.strokeStyle = '#ffffff';
-    context.lineWidth = 0.5;
-    canvasPath(this.meshed);
-    context.stroke();
+    this.context.beginPath();
+    this.context.strokeStyle = '#ffffff';
+    this.context.lineWidth = 0.5;
+    this.canvasPath(this.meshed);
+    this.context.stroke();
   }
 
 
@@ -443,16 +310,16 @@ class WeatherMap {
     const width = w * 0.625 < h ? w : h / 0.625;
     const height = width * 0.625;
 
-    canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
-    canvas.width = devicePixelRatio * width;
-    canvas.height = devicePixelRatio * height;
-    svg.attr('width', width);
-    svg.attr('height', height);
+    this.canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
+    this.canvas.width = devicePixelRatio * width;
+    this.canvas.height = devicePixelRatio * height;
+    this.svg.attr('width', width);
+    this.svg.attr('height', height);
     this.scaleFactor = width / 960;
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.strokeStyle = '#ffffff';
-    context.lineWidth = 0.5;
-    context.scale(devicePixelRatio * this.scaleFactor, devicePixelRatio * this.scaleFactor);
+    this.context.setTransform(1, 0, 0, 1, 0, 0);
+    this.context.strokeStyle = '#ffffff';
+    this.context.lineWidth = 0.5;
+    this.context.scale(devicePixelRatio * this.scaleFactor, devicePixelRatio * this.scaleFactor);
     if (this.us) {
       this.drawBaseMap();
       this.redraw(true);
@@ -465,8 +332,8 @@ class WeatherMap {
       this.resetStepForSpeed();
     }
 
-    if (this.currentTime >= max - dataStep) {
-      this.currentTime = min;
+    if (this.currentTime >= this.max - this.dataStep) {
+      this.currentTime = this.min;
       this.rewind = false;
       this.paused = false;
     } else {
@@ -480,12 +347,12 @@ class WeatherMap {
       this.speed = this.speedBeforeRewind;
       this.resetStepForSpeed();
     }
-    if (this.currentTime === min) {
+    if (this.currentTime === this.min) {
       return;
     }
     this.rewind = false;
     this.paused = true;
-    this.currentTime -= dataStep;
+    this.currentTime -= this.dataStep;
     this.redraw();
   }
 
@@ -494,12 +361,12 @@ class WeatherMap {
       this.speed = this.speedBeforeRewind;
       this.resetStepForSpeed();
     }
-    if (this.currentTime === max - dataStep) {
+    if (this.currentTime === this.max - this.dataStep) {
       return;
     }
     this.rewind = false;
     this.paused = true;
-    this.currentTime += dataStep;
+    this.currentTime += this.dataStep;
     this.redraw();
   }
 
@@ -536,15 +403,15 @@ class WeatherMap {
         this.stepMultiplier = 1;
         break;
     }
-    const numSteps = (max - min) / dataStep;
-    let currentSteps = (this.currentTime - min) / dataStep;
+    const numSteps = (this.max - this.min) / this.dataStep;
+    let currentSteps = (this.currentTime - this.min) / this.dataStep;
     currentSteps += (currentSteps % this.stepMultiplier);
     currentSteps = Math.min(numSteps - 1, currentSteps);
-    this.currentTime = min + (currentSteps * dataStep);
+    this.currentTime = this.min + (currentSteps * this.dataStep);
   }
 
   handleRewindClick() {
-    if (this.currentTime <= min) {
+    if (this.currentTime <= this.min) {
       this.rewind = false;
       return;
     }
@@ -557,24 +424,14 @@ class WeatherMap {
     this.rewind = true;
     this.paused = false;
   }
-}
 
-function drawCounty(county, fillStyle) {
-  context.fillStyle = fillStyle;
-  context.beginPath();
-  canvasPath(county);
-  context.fill();
-  context.stroke();
-}
-
-function datePad(v) {
-  return v < 10 ? `0${v}` : v;
-}
-
-if (checkFetchAndPromiseSupport()) {
-  main();
-} else {
-  loadPolyfills(main);
+  drawCounty(county, fillStyle) {
+    this.context.fillStyle = fillStyle;
+    this.context.beginPath();
+    this.canvasPath(county);
+    this.context.fill();
+    this.context.stroke();
+  }
 }
 
 function getJson(r) {
@@ -585,29 +442,170 @@ function getBuf(r) {
   return r.arrayBuffer();
 }
 
-function main() {
-  let weatherResult;
-  let clicksResult;
-  let alertsResult;
-  let countiesResult;
-  let mapResult;
-
-  const weather = fetch('data/weather-type-2018.dat')
-    .then(getBuf).then((r) => { weatherResult = r; });
-  const clicks = fetch('data/clicks.dat')
-    .then(getBuf).then((r) => { clicksResult = r; });
-  const alerts = fetch('data/alert-names.json')
-    .then(getJson).then((r) => { alertsResult = r; });
-  const counties = fetch('data/county-names.json')
-    .then(getJson).then((r) => { countiesResult = r; });
-  const map = fetch('data/10m.json').then(getJson).then((r) => { mapResult = r; });
-
-  Promise.all([weather, clicks, alerts, counties, map]).then(() =>
-    init(weatherResult, clicksResult, alertsResult, countiesResult, mapResult));
-}
-
 function init(weather, clicks, alerts, counties, map) {
-  const weatherMap = new WeatherMap(weather, clicks, alerts, counties, map);
+  /*
+   * A canvas is used to render the actual alert map and county colors because
+   * canvas rendering performs better than SVGs (way less memory used than
+   * creating 3000 paths).  We only use an SVG for rendering the user's selection.
+   */
+  const canvas = document.getElementById('map');
+
+  /*
+   * An SVG is used to render the red selection outline for counties.  On the
+   * canvas, when we draw outlines / shade in counties, we just "re-stamp" the
+   * county shape over the map.  Drawing a red border in the canvas leads to
+   * anti-aliasing, which leaves behind a weird red feathering effect when a
+   * county is deselected.  Using an SVG just for selection makes the selection
+   * look sharp without paying the price of rendering the whole map in SVG land.
+   */
+  const svg = d3.select('#svg');
+
+  // Grab a bunch of DOM elements, yada yada.
+  const rewindButton = document.getElementById('rewind');
+  const backButton = document.getElementById('oneBackward');
+  const playPauseButton = document.getElementById('playPause');
+  const forwardButton = document.getElementById('oneForward');
+  const speedButton = document.getElementById('speed');
+  const legend = document.getElementById('legend');
+
+  const alertTypeNames = {
+    0x8000: 'Warning',
+    0x4000: 'Advisory',
+    0x2000: 'Watch',
+    0x1000: 'Statement',
+  };
+
+  const alertTypeShortNames = {
+    0x8000: 'Wrn',
+    0x4000: 'Adv',
+    0x2000: 'Wtch',
+    0x1000: 'Stmt',
+  };
+
+  const alertTypeCodes = {
+    0x8000: 'W',
+    0x4000: 'Y',
+    0x2000: 'A',
+    0x1000: 'S',
+  };
+
+  const types = [
+    'NONE',
+    'RH', 'VO', 'AF', 'TS', 'TO', 'HU', 'TY', 'EW', 'HF', 'HI', 'TR', 'SV', 'BZ',
+    'SQ', 'WS', 'DS', 'WW', 'IS', 'LB', 'LE', 'HS', 'HP', 'SS', 'FF', 'SB', 'SN',
+    'BS', 'IP', 'ZR', 'SR', 'GL', 'TI', 'SM', 'AV', 'DU', 'CF', 'LS', 'FA', 'FL',
+    'HY', 'ZF', 'FG', 'FW', 'HW', 'WI', 'EC', 'EH', 'HZ', 'HT', 'FZ', 'LW', 'WC',
+    'UP', 'SE', 'SU', 'BH', 'LO', 'MA', 'SC', 'SI', 'RB', 'FR', 'AS', 'RP'];
+
+  const alertColors = {
+    ASY: '#808080',
+    AFY: '#696969',
+    AFW: '#A9A9A9',
+    AVY: '#CD853F',
+    AVW: '#1E90FF',
+    AVA: '#F4A460',
+    BHS: '#40E0D0',
+    BZW: '#FF4500',
+    BZA: '#ADFF2F',
+    DUY: '#BDB76B',
+    CFY: '#7CFC00',
+    CFS: '#6B8E23',
+    CFW: '#228B22',
+    CFA: '#66CDAA',
+    FGY: '#708090',
+    SMY: '#F0E68C',
+    DSW: '#FFE4C4',
+    EHW: '#C71585',
+    EHA: '#800000',
+    ECW: '#0000FF',
+    ECA: '#0000FF',
+    EWW: '#FF8C00',
+    FFS: '#8B0000',
+    FFW: '#8B0000',
+    FFA: '#2E8B57',
+    FLY: '#00FF7F',
+    FLS: '#00FF00',
+    FLW: '#00FF00',
+    FLA: '#2E8B57',
+    FZW: '#483D8B',
+    FZA: '#00FFFF',
+    ZFY: '#008080',
+    ZRY: '#DA70D6',
+    FRY: '#6495ED',
+    GLW: '#DDA0DD',
+    GLA: '#FFC0CB',
+    HZW: '#9400D3',
+    HZA: '#4169E1',
+    SEW: '#D8BFD8',
+    SEA: '#483D8B',
+    HTY: '#FF7F50',
+    SUY: '#BA55D3',
+    SUW: '#228B22',
+    HWW: '#DAA520',
+    HWA: '#B8860B',
+    HFW: '#CD5C5C',
+    HIW: '#CD5C5C',
+    HFA: '#9932CC',
+    HUW: '#DC143C',
+    HUA: '#FF00FF',
+    HYY: '#00FF7F',
+    ISW: '#8B008B',
+    LEY: '#48D1CC',
+    LEW: '#008B8B',
+    LEA: '#87CEFA',
+    LWY: '#D2B48C',
+    LSY: '#7CFC00',
+    LSS: '#6B8E23',
+    LSW: '#228B22',
+    LSA: '#66CDAA',
+    LOY: '#A52A2A',
+    MAS: '#FFDAB9',
+    RHW: '#4B0082',
+    FWW: '#FF1493',
+    RPS: '#40E0D0',
+    SSS: '#8B0000',
+    SSW: '#8B0000',
+    SSA: '#2E8B57',
+    SSY: '#2E8B57',
+    SVW: '#FFA500',
+    SVA: '#DB7093',
+    SVS: '#00FFFF',
+    SCY: '#D8BFD8',
+    RBY: '#D8BFD8',
+    SIY: '#D8BFD8',
+    SRW: '#9400D3',
+    SRA: '#FFE4B5',
+    TOW: '#FF0000',
+    TOA: '#FFFF00',
+    TRW: '#B22222',
+    TRA: '#F08080',
+    TSY: '#D2691E',
+    TSW: '#FD6347',
+    TSA: '#FF00FF',
+    TYW: '#DC143C',
+    TYA: '#FF00FF',
+    VOW: '#2F4F4F',
+    WIY: '#D2B48C',
+    WCY: '#AFEEEE',
+    WCW: '#B0C4DE',
+    WCA: '#5F9EA0',
+    WSW: '#FF69B4',
+    WSA: '#4682B4',
+    WWY: '#7B68EE',
+    FAY: '#00FF7F',
+    FAS: '#00FF00',
+    FAW: '#00FF00',
+    FAA: '#2E8B57',
+  };
+
+  // Initialize the map, start it running, and then hook up event listeners.
+  // Bluntly, it's more straightforward to not handle user input for a bit than
+  // it is to receive the events but do nothing.
+  const weatherMap = new WeatherMap(
+    weather, clicks, alerts, counties, map, legend, canvas, svg,
+    rewindButton, backButton, playPauseButton, forwardButton, speedButton,
+    types, alertTypeNames, alertTypeShortNames, alertTypeCodes, alertColors,
+  );
   weatherMap.sizeCanvas();
   weatherMap.maybeRunStep();
 
@@ -637,4 +635,32 @@ function loadPolyfills(callback) {
 
 function checkFetchAndPromiseSupport() {
   return window.Promise && window.fetch;
+}
+
+function main() {
+  let weatherResult;
+  let clicksResult;
+  let alertsResult;
+  let countiesResult;
+  let mapResult;
+
+  const weather = fetch('data/weather-type-2018.dat')
+    .then(getBuf).then((r) => { weatherResult = r; });
+  const clicks = fetch('data/clicks.dat')
+    .then(getBuf).then((r) => { clicksResult = r; });
+  const alerts = fetch('data/alert-names.json')
+    .then(getJson).then((r) => { alertsResult = r; });
+  const counties = fetch('data/county-names.json')
+    .then(getJson).then((r) => { countiesResult = r; });
+  const map = fetch('data/10m.json').then(getJson).then((r) => { mapResult = r; });
+
+  Promise.all([weather, clicks, alerts, counties, map]).then(() =>
+    init(weatherResult, clicksResult, alertsResult, countiesResult, mapResult));
+}
+
+// OKAY, TIME TO ACTUALLY DO SOMETHING.
+if (checkFetchAndPromiseSupport()) {
+  main();
+} else {
+  loadPolyfills(main);
 }
