@@ -73,8 +73,8 @@ function main() {
     .then(getJson).then((r) => { countyRenderer = new CountyRenderer(r); });
   const mapData = fetch('data/us-10m.json').then(getJson).then((r) => { mapDataResult = r; });
   const map = Promise.all([clicks, mapData]).then(() => {
-    usMap = new UsMap(mapDataResult, canvas, svg, clicksResult, alertRenderer);
-    usMap.sizeCanvas();
+    usMap = new UsMap(mapDataResult, canvas, svg, new Uint16Array(clicksResult), alertRenderer);
+    usMap.redrawMapForResize();
   });
 
   Promise.all([weather, counties, map]).then(() =>

@@ -84,7 +84,7 @@ export default class WeatherController {
     }
 
     this.usMap.redraw(newClasses);
-    this.usMap.updateSelectionSvg(this.clickedCounty);
+    this.usMap.setSelection(this.clickedCounty);
 
     this.previous = newClasses;
     document.getElementById('time').textContent = this.getDateText();
@@ -171,7 +171,7 @@ export default class WeatherController {
       this.clickedCounty = this.selectedCounty;
     }
 
-    this.usMap.updateSelectionSvg(this.clickedCounty);
+    this.usMap.setSelection(this.clickedCounty);
     this.refreshHoverText();
   }
 
