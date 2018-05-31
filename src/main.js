@@ -1,6 +1,7 @@
 /* eslint-env browser */
 
 import AlertRenderer from './alert-renderer';
+import CountyRenderer from './county-renderer';
 import Legend from './legend';
 import UsMap from './us-map';
 import WeatherController from './weather-controller';
@@ -14,7 +15,7 @@ function getBuf(r) {
 }
 
 // Given the loaded
-function createControllerAndSetUpListeners(weather, alertRenderer, counties, usMap) {
+function createControllerAndSetUpListeners(weather, alertRenderer, countyRenderer, usMap) {
   // Grab a bunch of DOM elements, yada yada.
   const rewindButton = document.getElementById('rewind');
   const backButton = document.getElementById('oneBackward');
@@ -26,7 +27,7 @@ function createControllerAndSetUpListeners(weather, alertRenderer, counties, usM
   // Initialize the map, start it running, and then hook up event listeners.
   // Bluntly, it's more straightforward to not handle user input for a bit than
   // it is to receive the events but do nothing.
-  const legend = new Legend(legendElement, counties, alertRenderer);
+  const legend = new Legend(legendElement, countyRenderer, alertRenderer);
   const weatherMap = new WeatherController(weather, legend, usMap, playPauseButton, speedButton);
   weatherMap.maybeRunStep();
 
@@ -60,7 +61,7 @@ function main() {
 
   let weatherResult;
   let clicksResult;
-  let countiesResult;
+  let countyRenderer;
   let mapDataResult;
   let usMap;
 
@@ -69,7 +70,7 @@ function main() {
   const clicks = fetch('data/click-map.dat')
     .then(getBuf).then((r) => { clicksResult = r; });
   const counties = fetch('data/county-names.json')
-    .then(getJson).then((r) => { countiesResult = r; });
+    .then(getJson).then((r) => { countyRenderer = new CountyRenderer(r); });
   const mapData = fetch('data/us-10m.json').then(getJson).then((r) => { mapDataResult = r; });
   const map = Promise.all([clicks, mapData]).then(() => {
     usMap = new UsMap(mapDataResult, canvas, svg, clicksResult, alertRenderer);
@@ -77,7 +78,7 @@ function main() {
   });
 
   Promise.all([weather, counties, map]).then(() =>
-    createControllerAndSetUpListeners(weatherResult, alertRenderer, countiesResult, usMap));
+    createControllerAndSetUpListeners(weatherResult, alertRenderer, countyRenderer, usMap));
 }
 
 // Okay! Time to actually do something.  Check if the browser supports fetch()

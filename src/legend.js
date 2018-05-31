@@ -1,9 +1,9 @@
 /* eslint-env browser */
 
 export default class Legend {
-  constructor(legend, countyNames, alertRenderer) {
+  constructor(legend, countyRenderer, alertRenderer) {
     this.legend = legend;
-    this.countyNames = countyNames;
+    this.countyRenderer = countyRenderer;
     this.alertRenderer = alertRenderer;
   }
 
@@ -13,8 +13,7 @@ export default class Legend {
       return;
     }
 
-    const stateName = this.countyNames[countyId - (countyId % 1000)];
-    const fullName = `${this.countyNames[countyId]}, ${stateName}`;
+    const fullName = this.countyRenderer.getFullName(countyId);
 
     let alertHtml = '';
     for (let i = 0; i < classes.length; i += 1) {
