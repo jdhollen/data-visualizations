@@ -131,7 +131,7 @@ const alertColors = {
 };
 
 const alertNames = {
-  SV: 'Severe Thunderstorm',
+  SV: 'Severe T-storm',
   TO: 'Tornado',
   MA: 'Marine',
   AF: 'Volcanic Ashfall',
@@ -154,8 +154,8 @@ const alertNames = {
   FG: 'Dense Fog',
   FW: 'Red Flag',
   GL: 'Gale',
-  HF: 'Hurricane Force Wind',
-  HI: 'Inland Hurricane Wind',
+  HF: 'Hurr. Force Wind',
+  HI: 'Inland Hurr. Wind',
   HS: 'Heavy Snow',
   HP: 'Heavy Sleet',
   HT: 'Heat',
@@ -165,7 +165,7 @@ const alertNames = {
   HZ: 'Hard Freeze',
   IS: 'Ice Storm',
   IP: 'Sleet',
-  LB: 'Lake Effect Snow and Blowing Snow',
+  LB: 'Lake / Blowing Snow',
   LE: 'Lake Effect Snow',
   LO: 'Low Water',
   LS: 'Lakeshore Flood',
@@ -183,7 +183,7 @@ const alertNames = {
   SR: 'Storm',
   SS: 'Storm Surge',
   SU: 'High Surf',
-  TI: 'Inland Tropical Storm Wind',
+  TI: 'Inland TrStrm Wind',
   TR: 'Tropical Storm',
   TS: 'Tsunami',
   TY: 'Typhoon',
