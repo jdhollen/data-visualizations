@@ -75,17 +75,23 @@ export default class UsMap {
     this.context.stroke();
   }
 
-  sizeCanvas() {
+  static setMapDimensions(canvas, svg) {
     const w = Math.min(860, window.innerWidth);
     const h = Math.max(300, Math.min(600, window.innerHeight - 100));
     const width = w * 0.625 < h ? w : h / 0.625;
     const height = width * 0.625;
 
-    this.canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
-    this.canvas.width = devicePixelRatio * width;
-    this.canvas.height = devicePixelRatio * height;
-    this.svg.attr('width', width);
-    this.svg.attr('height', height);
+    canvas.setAttribute('style', `width: ${width}px; height: ${height}px;`);
+    canvas.setAttribute('width', devicePixelRatio * width);
+    canvas.setAttribute('height', devicePixelRatio * height);
+    svg.setAttribute('width', width);
+    svg.setAttribute('height', height);
+
+    return width;
+  }
+
+  sizeCanvas() {
+    const width = UsMap.setMapDimensions(this.canvas, this.svg.node());
     this.scaleFactor = width / 960;
     this.context.setTransform(1, 0, 0, 1, 0, 0);
     this.context.strokeStyle = '#ffffff';

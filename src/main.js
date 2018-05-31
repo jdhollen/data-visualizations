@@ -61,6 +61,10 @@ function checkFetchAndPromiseSupport() {
 function main() {
   const alertTypeHelper = new AlertRenderer();
 
+  const canvas = document.getElementById('map');
+  const svg = document.getElementById('svg');
+  UsMap.setMapDimensions(canvas, svg);
+
   let weatherResult;
   let clicksResult;
   let countiesResult;
@@ -75,13 +79,7 @@ function main() {
     .then(getJson).then((r) => { countiesResult = r; });
   const mapData = fetch('data/10m.json').then(getJson).then((r) => { mapDataResult = r; });
   const map = Promise.all([clicks, mapData]).then(() => {
-    usMap = new UsMap(
-      mapDataResult,
-      document.getElementById('map'),
-      document.getElementById('svg'),
-      clicksResult,
-      alertTypeHelper,
-    );
+    usMap = new UsMap(mapDataResult, canvas, svg, clicksResult, alertTypeHelper);
     usMap.sizeCanvas();
   });
 
