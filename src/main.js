@@ -6,6 +6,41 @@ function datePad(v) {
   return v < 10 ? `0${v}` : v;
 }
 
+class Legend {
+  constructor(legend, countyNames, alertTypeHelper) {
+    this.legend = legend;
+    this.countyNames = countyNames;
+    this.alertTypeHelper = alertTypeHelper;
+  }
+
+  setLegendContents(countyId, classes) {
+    if (!countyId) {
+      this.legend.innerHTML = '<span class="legendTitle">Select a county to see alerts.</span>';
+      return;
+    }
+
+    const stateName = this.countyNames[countyId - (countyId % 1000)];
+    const fullName = `${this.countyNames[countyId]}, ${stateName}`;
+
+    let alertHtml = '';
+    for (let i = 0; i < classes.length; i += 1) {
+      const av = classes[i];
+
+      const alertColor = this.alertTypeHelper.getColor(av);
+      const alert = (window.innerWidth >= 375)
+        ? this.alertTypeHelper.getFullName(av) : this.alertTypeHelper.getShortName(av);
+      if (alert) {
+        alertHtml = alertHtml.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert}</div>`);
+      }
+    }
+    if (!alertHtml) {
+      alertHtml = '<div class="legendItem">No alerts</div>';
+    }
+
+    this.legend.innerHTML = `<span class="legendTitle">${fullName}</span>${alertHtml}`;
+  }
+}
+
 class AlertTypeHelper {
   constructor(types, alertTypeNames, alertTypeShortNames, alertTypeCodes, alertColors, alertNames) {
     this.types = types;
@@ -73,6 +108,8 @@ class UsMap {
     canvas.addEventListener('mousemove', (e) => { this.handleMouseover(e); });
     canvas.addEventListener('mouseout', (e) => { this.handleMouseout(e); });
     canvas.addEventListener('click', (e) => { this.handleClick(e); });
+    window.addEventListener('resize', () => this.sizeCanvas());
+    window.addEventListener('orientationchange', () => this.sizeCanvas());
   }
 
   handleMouseover(e) {
@@ -196,8 +233,11 @@ class UsMap {
 
 class WeatherMap {
   constructor(
-    weather, counties, legend, usMap,
-    rewindButton, backButton, playPauseButton, forwardButton, speedButton,
+    weather,
+    legend,
+    usMap,
+    playPauseButton,
+    speedButton,
     alertTypeHelper,
   ) {
     this.arr32 = new Uint32Array(weather, 0, (weather.byteLength - (weather.byteLength % 4)) / 4);
@@ -207,18 +247,12 @@ class WeatherMap {
     this.dataStep = this.arr32[2] * 1000;
     this.legend = legend;
     this.usMap = usMap;
-
-    this.rewindButton = rewindButton;
-    this.backButton = backButton;
     this.playPauseButton = playPauseButton;
-    this.forwardButton = forwardButton;
     this.speedButton = speedButton;
     this.alertTypeHelper = alertTypeHelper;
 
     // TODO(jdhollen): this should programatically be slider's max.
     this.positionSteps = 1000;
-
-    this.countyNames = counties;
 
     this.selectedCounty = 0;
     this.clickedCounty = 0;
@@ -252,30 +286,8 @@ class WeatherMap {
   }
 
   refreshHoverText() {
-    if (!this.selectedCounty) {
-      this.legend.innerHTML = '<span class="legendTitle">Select a county to see alerts.</span>';
-      return;
-    }
-    const stateName = this.countyNames[this.selectedCounty - (this.selectedCounty % 1000)];
-    const fullName = `${this.countyNames[this.selectedCounty]}, ${stateName}`;
     const classes = this.previous[this.selectedCounty] || [];
-
-    let alerts = '';
-    for (let i = 0; i < classes.length; i += 1) {
-      const av = classes[i];
-
-      const alertColor = this.alertTypeHelper.getColor(av);
-      const alert = (window.innerWidth >= 375)
-        ? this.alertTypeHelper.getFullName(av) : this.alertTypeHelper.getShortName(av);
-      if (alert) {
-        alerts = alerts.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert}</div>`);
-      }
-    }
-    if (!alerts) {
-      alerts = '<div class="legendItem">No alerts</div>';
-    }
-
-    this.legend.innerHTML = `<span class="legendTitle">${fullName}</span>${alerts}`;
+    this.legend.setLegendContents(this.selectedCounty, classes);
   }
 
   redraw() {
@@ -519,32 +531,51 @@ function getBuf(r) {
   return r.arrayBuffer();
 }
 
-function init(weather, clicks, alerts, counties, map) {
-  /*
-   * A canvas is used to render the actual alert map and county colors because
-   * canvas rendering performs better than SVGs (way less memory used than
-   * creating 3000 paths).  We only use an SVG for rendering the user's selection.
-   */
-  const canvas = document.getElementById('map');
-
-  /*
-   * An SVG is used to render the red selection outline for counties.  On the
-   * canvas, when we draw outlines / shade in counties, we just "re-stamp" the
-   * county shape over the map.  Drawing a red border in the canvas leads to
-   * anti-aliasing, which leaves behind a weird red feathering effect when a
-   * county is deselected.  Using an SVG just for selection makes the selection
-   * look sharp without paying the price of rendering the whole map in SVG land.
-   */
-  const svg = d3.select('#svg');
-
+function init(weather, clicks, alertTypeHelper, counties, usMap) {
   // Grab a bunch of DOM elements, yada yada.
   const rewindButton = document.getElementById('rewind');
   const backButton = document.getElementById('oneBackward');
   const playPauseButton = document.getElementById('playPause');
   const forwardButton = document.getElementById('oneForward');
   const speedButton = document.getElementById('speed');
-  const legend = document.getElementById('legend');
+  const legendElement = document.getElementById('legend');
 
+  // Initialize the map, start it running, and then hook up event listeners.
+  // Bluntly, it's more straightforward to not handle user input for a bit than
+  // it is to receive the events but do nothing.
+  const legend = new Legend(legendElement, counties, alertTypeHelper);
+  const weatherMap = new WeatherMap(
+    weather,
+    legend,
+    usMap,
+    playPauseButton,
+    speedButton,
+    alertTypeHelper,
+  );
+  weatherMap.maybeRunStep();
+
+  document.getElementById('slider').addEventListener('change', (e) => { weatherMap.handleSliderChangeEvent(e); });
+  document.getElementById('slider').addEventListener('input', (e) => { weatherMap.handleSliderInputEvent(e); });
+  playPauseButton.addEventListener('click', () => weatherMap.handlePlayPauseResetClick());
+  forwardButton.addEventListener('click', () => weatherMap.handleForwardClick());
+  backButton.addEventListener('click', () => weatherMap.handleBackwardClick());
+  speedButton.addEventListener('click', () => weatherMap.handleSpeedClick());
+  rewindButton.addEventListener('click', () => weatherMap.handleRewindClick());
+}
+
+function loadPolyfills(callback) {
+  const script = document.createElement('script');
+  script.src = 'https://cdn.polyfill.io/v2/polyfill.min.js?features=fetch';
+  script.onload = () => { callback(); };
+  script.onerror = () => { callback(new Error('failed to load polyfills')); };
+  document.head.appendChild(script);
+}
+
+function checkFetchAndPromiseSupport() {
+  return window.Promise && window.fetch;
+}
+
+function main() {
   const alertTypeNames = {
     0x8000: 'Warning',
     0x4000: 'Advisory',
@@ -675,65 +706,108 @@ function init(weather, clicks, alerts, counties, map) {
     FAA: '#2E8B57',
   };
 
-  // Initialize the map, start it running, and then hook up event listeners.
-  // Bluntly, it's more straightforward to not handle user input for a bit than
-  // it is to receive the events but do nothing.
+  const alertNames = {
+    SV: 'Severe Thunderstorm',
+    TO: 'Tornado',
+    MA: 'Marine',
+    AF: 'Volcanic Ashfall',
+    AS: 'Air Stagnation',
+    AV: 'Avalanche',
+    BH: 'Beach Hazard',
+    BS: 'Blowing Snow',
+    BZ: 'Blizzard',
+    CF: 'Coastal Flood',
+    DU: 'Blowing Dust',
+    DS: 'Dust Storm',
+    EC: 'Extreme Cold',
+    EH: 'Excessive Heat',
+    EW: 'Extreme Wind',
+    FA: 'Areal Flood',
+    FF: 'Flash Flood',
+    FL: 'Flood',
+    FR: 'Frost',
+    FZ: 'Freeze',
+    FG: 'Dense Fog',
+    FW: 'Red Flag',
+    GL: 'Gale',
+    HF: 'Hurricane Force Wind',
+    HI: 'Inland Hurricane Wind',
+    HS: 'Heavy Snow',
+    HP: 'Heavy Sleet',
+    HT: 'Heat',
+    HU: 'Hurricane',
+    HW: 'High Wind',
+    HY: 'Hydrologic',
+    HZ: 'Hard Freeze',
+    IS: 'Ice Storm',
+    IP: 'Sleet',
+    LB: 'Lake Effect Snow and Blowing Snow',
+    LE: 'Lake Effect Snow',
+    LO: 'Low Water',
+    LS: 'Lakeshore Flood',
+    LW: 'Lake Wind',
+    RB: 'Small Craft for Rough Bar',
+    RH: 'Radiological Hazard',
+    RP: 'Rip Current',
+    SB: 'Snow and Blowing Snow',
+    SC: 'Small Craft',
+    SE: 'Hazardous Seas',
+    SI: 'Small Craft for Winds',
+    SM: 'Dense Smoke',
+    SN: 'Snow',
+    SQ: 'Snow Squall',
+    SR: 'Storm',
+    SS: 'Storm Surge',
+    SU: 'High Surf',
+    TI: 'Inland Tropical Storm Wind',
+    TR: 'Tropical Storm',
+    TS: 'Tsunami',
+    TY: 'Typhoon',
+    UP: 'Ice Accretion',
+    VO: 'Volcano',
+    WC: 'Wind Chill',
+    WI: 'Wind',
+    WS: 'Winter Storm',
+    WW: 'Winter Weather',
+    ZF: 'Freezing Fog',
+    ZR: 'Freezing Rain',
+  };
+
   const alertTypeHelper = new AlertTypeHelper(
-    types, alertTypeNames, alertTypeShortNames,
-    alertTypeCodes, alertColors, alerts,
+    types,
+    alertTypeNames,
+    alertTypeShortNames,
+    alertTypeCodes,
+    alertColors,
+    alertNames,
   );
-  const usMap = new UsMap(map, canvas, svg, clicks, alertTypeHelper);
-  const weatherMap = new WeatherMap(
-    weather, counties, legend, usMap,
-    rewindButton, backButton, playPauseButton, forwardButton, speedButton,
-    alertTypeHelper,
-  );
-  usMap.sizeCanvas();
-  weatherMap.maybeRunStep();
 
-  document.getElementById('slider').addEventListener('change', (e) => { weatherMap.handleSliderChangeEvent(e); });
-  document.getElementById('slider').addEventListener('input', (e) => { weatherMap.handleSliderInputEvent(e); });
-  playPauseButton.addEventListener('click', () => weatherMap.handlePlayPauseResetClick());
-  forwardButton.addEventListener('click', () => weatherMap.handleForwardClick());
-  backButton.addEventListener('click', () => weatherMap.handleBackwardClick());
-  speedButton.addEventListener('click', () => weatherMap.handleSpeedClick());
-  rewindButton.addEventListener('click', () => weatherMap.handleRewindClick());
-
-  window.addEventListener('resize', () => usMap.sizeCanvas());
-  window.addEventListener('orientationchange', (e) => { usMap.sizeCanvas(e); });
-}
-
-function loadPolyfills(callback) {
-  const script = document.createElement('script');
-  script.src = 'https://cdn.polyfill.io/v2/polyfill.min.js?features=fetch';
-  script.onload = () => { callback(); };
-  script.onerror = () => { callback(new Error('failed to load polyfills')); };
-  document.head.appendChild(script);
-}
-
-function checkFetchAndPromiseSupport() {
-  return window.Promise && window.fetch;
-}
-
-function main() {
   let weatherResult;
   let clicksResult;
-  let alertsResult;
   let countiesResult;
+  let mapDataResult;
   let mapResult;
 
   const weather = fetch('data/weather-type-2018.dat')
     .then(getBuf).then((r) => { weatherResult = r; });
   const clicks = fetch('data/clicks.dat')
     .then(getBuf).then((r) => { clicksResult = r; });
-  const alerts = fetch('data/alert-names.json')
-    .then(getJson).then((r) => { alertsResult = r; });
   const counties = fetch('data/county-names.json')
     .then(getJson).then((r) => { countiesResult = r; });
-  const map = fetch('data/10m.json').then(getJson).then((r) => { mapResult = r; });
+  const mapData = fetch('data/10m.json').then(getJson).then((r) => { mapDataResult = r; });
+  const map = Promise.all([clicks, mapData]).then(() => {
+    mapResult = new UsMap(
+      mapDataResult,
+      document.getElementById('map'),
+      d3.select('#svg'),
+      clicksResult,
+      alertTypeHelper,
+    );
+    mapResult.sizeCanvas();
+  });
 
-  Promise.all([weather, clicks, alerts, counties, map]).then(() =>
-    init(weatherResult, clicksResult, alertsResult, countiesResult, mapResult));
+  Promise.all([weather, clicks, counties, map]).then(() =>
+    init(weatherResult, clicksResult, alertTypeHelper, countiesResult, mapResult));
 }
 
 // OKAY, TIME TO ACTUALLY DO SOMETHING.
