@@ -7,7 +7,6 @@ export default class WeatherController {
     usMap,
     playPauseButton,
     speedButton,
-    alertTypeHelper,
   ) {
     this.arr32 = new Uint32Array(weather, 0, (weather.byteLength - (weather.byteLength % 4)) / 4);
     this.arr16 = new Uint16Array(weather);
@@ -18,7 +17,6 @@ export default class WeatherController {
     this.usMap = usMap;
     this.playPauseButton = playPauseButton;
     this.speedButton = speedButton;
-    this.alertTypeHelper = alertTypeHelper;
 
     // TODO(jdhollen): this should programatically be slider's max.
     this.positionSteps = 1000;

@@ -2,14 +2,14 @@
 /* eslint-env browser */
 
 export default class UsMap {
-  constructor(data, canvas, svg, clicks, alertTypeHelper) {
+  constructor(data, canvas, svg, clicks, alertRenderer) {
     this.canvas = canvas;
     this.context = canvas.getContext('2d');
     this.canvasPath = d3.geoPath().context(this.context);
     this.svg = d3.select(svg);
     this.path = d3.geoPath();
     this.us = data;
-    this.alertTypeHelper = alertTypeHelper;
+    this.alertRenderer = alertRenderer;
     this.clicks16 = new Uint16Array(clicks);
 
     this.renderedCounties = {};
@@ -149,7 +149,7 @@ export default class UsMap {
       const previousAlertForMap =
         this.renderedCounties[countyId] ? this.renderedCounties[countyId][0] : 0;
       if (ignorePreviousState || alertForMap !== previousAlertForMap) {
-        const color = this.alertTypeHelper.getColor(alertForMap);
+        const color = this.alertRenderer.getColor(alertForMap);
         this.drawCounty(countyId, color);
       }
     }

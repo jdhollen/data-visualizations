@@ -14,7 +14,7 @@ function getBuf(r) {
 }
 
 // Given the loaded
-function createControllerAndSetUpListeners(weather, alertTypeHelper, counties, usMap) {
+function createControllerAndSetUpListeners(weather, alertRenderer, counties, usMap) {
   // Grab a bunch of DOM elements, yada yada.
   const rewindButton = document.getElementById('rewind');
   const backButton = document.getElementById('oneBackward');
@@ -26,15 +26,8 @@ function createControllerAndSetUpListeners(weather, alertTypeHelper, counties, u
   // Initialize the map, start it running, and then hook up event listeners.
   // Bluntly, it's more straightforward to not handle user input for a bit than
   // it is to receive the events but do nothing.
-  const legend = new Legend(legendElement, counties, alertTypeHelper);
-  const weatherMap = new WeatherController(
-    weather,
-    legend,
-    usMap,
-    playPauseButton,
-    speedButton,
-    alertTypeHelper,
-  );
+  const legend = new Legend(legendElement, counties, alertRenderer);
+  const weatherMap = new WeatherController(weather, legend, usMap, playPauseButton, speedButton);
   weatherMap.maybeRunStep();
 
   document.getElementById('slider').addEventListener('change', (e) => { weatherMap.handleSliderChangeEvent(e); });
@@ -59,7 +52,7 @@ function checkFetchAndPromiseSupport() {
 }
 
 function main() {
-  const alertTypeHelper = new AlertRenderer();
+  const alertRenderer = new AlertRenderer();
 
   const canvas = document.getElementById('map');
   const svg = document.getElementById('svg');
@@ -73,18 +66,18 @@ function main() {
 
   const weather = fetch('data/weather-type-2018.dat')
     .then(getBuf).then((r) => { weatherResult = r; });
-  const clicks = fetch('data/clicks.dat')
+  const clicks = fetch('data/click-map.dat')
     .then(getBuf).then((r) => { clicksResult = r; });
   const counties = fetch('data/county-names.json')
     .then(getJson).then((r) => { countiesResult = r; });
-  const mapData = fetch('data/10m.json').then(getJson).then((r) => { mapDataResult = r; });
+  const mapData = fetch('data/us-10m.json').then(getJson).then((r) => { mapDataResult = r; });
   const map = Promise.all([clicks, mapData]).then(() => {
-    usMap = new UsMap(mapDataResult, canvas, svg, clicksResult, alertTypeHelper);
+    usMap = new UsMap(mapDataResult, canvas, svg, clicksResult, alertRenderer);
     usMap.sizeCanvas();
   });
 
   Promise.all([weather, counties, map]).then(() =>
-    createControllerAndSetUpListeners(weatherResult, alertTypeHelper, countiesResult, usMap));
+    createControllerAndSetUpListeners(weatherResult, alertRenderer, countiesResult, usMap));
 }
 
 // Okay! Time to actually do something.  Check if the browser supports fetch()

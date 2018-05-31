@@ -1,10 +1,10 @@
 /* eslint-env browser */
 
 export default class Legend {
-  constructor(legend, countyNames, alertTypeHelper) {
+  constructor(legend, countyNames, alertRenderer) {
     this.legend = legend;
     this.countyNames = countyNames;
-    this.alertTypeHelper = alertTypeHelper;
+    this.alertRenderer = alertRenderer;
   }
 
   setLegendContents(countyId, classes) {
@@ -20,9 +20,9 @@ export default class Legend {
     for (let i = 0; i < classes.length; i += 1) {
       const av = classes[i];
 
-      const alertColor = this.alertTypeHelper.getColor(av);
+      const alertColor = this.alertRenderer.getColor(av);
       const alert = (window.innerWidth >= 375)
-        ? this.alertTypeHelper.getFullName(av) : this.alertTypeHelper.getShortName(av);
+        ? this.alertRenderer.getFullName(av) : this.alertRenderer.getShortName(av);
       if (alert) {
         alertHtml = alertHtml.concat(`<div class="legendItem"><div class="legendSquare" style="background-color:${alertColor};"></div>${alert}</div>`);
       }
