@@ -21,7 +21,7 @@ const alertTypeCodes = {
   0x1000: 'S',
 };
 
-const types = [
+const alerts = [
   'NONE',
   'RH', 'VO', 'AF', 'TS', 'TO', 'HU', 'TY', 'EW', 'HF', 'HI', 'TR', 'SV', 'BZ',
   'SQ', 'WS', 'DS', 'WW', 'IS', 'LB', 'LE', 'HS', 'HP', 'SS', 'FF', 'SB', 'SN',
@@ -197,9 +197,16 @@ const alertNames = {
   ZR: 'Freezing Rain',
 };
 
+/*
+ * A simple renderer for getting the name and color of an NWS alert given its
+ * ID number.  IDs are 16-bit numbers, where the low byte contains the alert ID
+ * ("Flood", "Freezing Rain", "Tornado", ...) and the high byte contains the
+ * alert type ("Warning", "Watch", "Advisory", ...).  Alert IDs correspond with
+ * their position in the "alerts" array above.
+ */
 export default class AlertRenderer {
   constructor() {
-    this.types = types;
+    this.alerts = alerts;
     this.alertTypeNames = alertTypeNames;
     this.alertTypeShortNames = alertTypeShortNames;
     this.alertTypeCodes = alertTypeCodes;
@@ -210,7 +217,7 @@ export default class AlertRenderer {
   getFullName(alertNumber) {
     const alertId = alertNumber & 0xff;
     const alertType = alertNumber & 0xff00;
-    const alert = this.alertNames[this.types[alertId]];
+    const alert = this.alertNames[this.alerts[alertId]];
     if (!alert) {
       return '';
     }
@@ -221,7 +228,7 @@ export default class AlertRenderer {
   getShortName(alertNumber) {
     const alertId = alertNumber & 0xff;
     const alertType = alertNumber & 0xff00;
-    const alert = this.alertNames[this.types[alertId]];
+    const alert = this.alertNames[this.alerts[alertId]];
     if (!alert) {
       return '';
     }
@@ -231,7 +238,7 @@ export default class AlertRenderer {
 
   getColor(alertNumber) {
     const alertString =
-      this.types[alertNumber & 0xff] + this.alertTypeCodes[alertNumber & 0xff00];
+      this.alerts[alertNumber & 0xff] + this.alertTypeCodes[alertNumber & 0xff00];
     return this.alertColors[alertString] || '#cccccc';
   }
 }
