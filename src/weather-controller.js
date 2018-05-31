@@ -23,14 +23,23 @@ export default class WeatherController {
    *     map element.
    * @param usMap a UsMap that will display color-coded counties according to
    *     the "most serious" warning currently out for those counties.
-   * @param playPauseButton a button for playing / pausing the animation.
-   * @param speedButton a button for changing the animation's playback speed.
    * @param slider an input range DOM element for quickly changing the displayed
    *     time in the animation.
    * @param timeDisplay a simple DOM element for displaying the current timestep
    *     in the animation.
    */
-  constructor(weather, legend, usMap, playPauseButton, speedButton, slider, timeDisplay) {
+  constructor(
+    weather,
+    legend,
+    usMap,
+    slider,
+    timeDisplay,
+    playPauseButton,
+    forwardButton,
+    backButton,
+    rewindButton,
+    speedButton,
+  ) {
     this.arr32 = new Uint32Array(weather, 0, (weather.byteLength - (weather.byteLength % 4)) / 4);
     this.arr16 = new Uint16Array(weather);
     this.minTime = this.arr32[0] * 1000;
@@ -85,6 +94,18 @@ export default class WeatherController {
     usMap.setClickCallback((id) => { this.handleCanvasClick(id); });
     usMap.setMouseoverCallback((id) => { this.handleMouseOver(id); });
     usMap.setMouseoutCallback(() => { this.handleMouseOut(); });
+
+    slider.addEventListener('change', (e) => { this.handleSliderChangeEvent(e); });
+    slider.addEventListener('input', (e) => { this.handleSliderInputEvent(e); });
+    playPauseButton.addEventListener('click', () => this.handlePlayPauseResetClick());
+    forwardButton.addEventListener('click', () => this.handleForwardClick());
+    backButton.addEventListener('click', () => this.handleBackwardClick());
+    speedButton.addEventListener('click', () => this.handleSpeedClick());
+    rewindButton.addEventListener('click', () => this.handleRewindClick());
+
+    // Whether or not the animation has started--this is only used to prevent
+    // multiple calls to run().
+    this.started = false;
   }
 
   static datePad(v) {
@@ -346,5 +367,14 @@ export default class WeatherController {
     currentSteps += (currentSteps % this.stepMultiplier);
     currentSteps = Math.min(numSteps - 1, currentSteps);
     this.currentTime = this.minTime + (currentSteps * this.dataStep);
+  }
+
+  // Starts the animation.
+  run() {
+    if (this.started) {
+      return;
+    }
+    this.started = true;
+    this.maybeRunStep();
   }
 }
