@@ -23,12 +23,22 @@ function createControllerAndSetUpListeners(weather, alertRenderer, countyRendere
   const forwardButton = document.getElementById('oneForward');
   const speedButton = document.getElementById('speed');
   const legendElement = document.getElementById('legend');
+  const timeDisplay = document.getElementById('time');
+  const slider = document.getElementById('slider');
 
   // Initialize the map, start it running, and then hook up event listeners.
   // Bluntly, it's more straightforward to not handle user input for a bit than
   // it is to receive the events but do nothing.
   const legend = new Legend(legendElement, countyRenderer, alertRenderer);
-  const weatherMap = new WeatherController(weather, legend, usMap, playPauseButton, speedButton);
+  const weatherMap = new WeatherController(
+    weather,
+    legend,
+    usMap,
+    playPauseButton,
+    speedButton,
+    slider,
+    timeDisplay,
+  );
   weatherMap.maybeRunStep();
 
   document.getElementById('slider').addEventListener('change', (e) => { weatherMap.handleSliderChangeEvent(e); });
