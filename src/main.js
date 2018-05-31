@@ -70,7 +70,7 @@ function main() {
   let mapJson;
   let usMap;
 
-  const weather = fetch('data/weather-type-2018.dat')
+  const weather = fetch('data/weather-type-900-1514764800.dat')
     .then(getBuf).then((r) => { weatherBuffer = r; });
   const clicks = fetch('data/click-map.dat')
     .then(getBuf).then((r) => { clickMapBuffer = r; });
