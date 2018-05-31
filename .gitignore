@@ -1,9 +1,5 @@
-.babelrc
 .DS_STORE
-main.compiled.js
 main.min.js
 node_modules
 npm-debug.log
-package.json
-package-lock.json
 src/data/

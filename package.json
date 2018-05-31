@@ -1,0 +1,30 @@
+{
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-minify": "^0.4.3",
+    "babel-preset-env": "^1.7.0",
+    "babelify": "^8.0.0",
+    "browserify": "^16.2.2",
+    "csslint": "^1.0.5",
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb": "^16.1.0",
+    "eslint-plugin-import": "^2.12.0",
+    "eslint-plugin-jsx-a11y": "^6.0.3",
+    "eslint-plugin-react": "^7.8.2"
+  },
+  "version": "0.1.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "browserify src/main.js -t babelify | minify > src/main.min.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdhollen/data-visualizations.git"
+  },
+  "author": "Jim Hollenbach",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/jdhollen/data-visualizations/issues"
+  },
+  "homepage": "https://github.com/jdhollen/data-visualizations#readme"
+}
