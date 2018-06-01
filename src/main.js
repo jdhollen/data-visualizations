@@ -54,7 +54,6 @@ function checkFetchAndPromiseSupport() {
   return window.Promise && window.fetch;
 }
 
-
 function main() {
   // Set up the map size early--this minimizes the amount of time that it takes
   // for the screen to take on its final shape, which looks better even though
@@ -70,7 +69,18 @@ function main() {
   let mapJson;
   let usMap;
 
-  const weather = fetch('data/weather-type-900-1514764800.dat')
+  const datasets = {
+    2016: 'data/weather-type-900-1451606400.dat',
+    2017: 'data/weather-type-900-1483228800.dat',
+    2018: 'data/weather-type-900-1514764800.dat',
+  };
+
+  const param = new URL(window.location.href).searchParams.get('year');
+  const year = datasets[param] ? param : '2018';
+  const datUrl = datasets[year];
+  document.getElementById('pageTitle').textContent = `NWS Warnings, ${year}`;
+
+  const weather = fetch(datUrl)
     .then(getBuf).then((r) => { weatherBuffer = r; });
   const clicks = fetch('data/click-map.dat')
     .then(getBuf).then((r) => { clickMapBuffer = r; });

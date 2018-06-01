@@ -16,7 +16,7 @@
   <body>
     <div class="background"></div>
     <div class="block textBlock">
-      <div class="title">NWS Warnings, 2018</div>
+      <div id="pageTitle" class="title">NWS Warnings</div>
     </div>
     <div class="block">
       <div class="mapContainer" id="mapContainer">
@@ -42,15 +42,14 @@
     <div class="block textBlock">
       <div>
         <p> This map displays all watches, warnings, and advisories issued by
-          the National Weather Service over the last few months (currently
-          <span style="display:inline-block">Jan 1, 2018</span> to
-          <span style="display:inline-block">May 28, 2018).</span>
+          the National Weather Service.
           It's basically an animated version of the
           <a href="http://www.spc.noaa.gov/products/wwa/">NWS WWA Display</a>.
           I joined <a href="https://mesonet.agron.iastate.edu/request/gis/watchwarn.phtml">archival data</a>
           from the <a href="https://mesonet.agron.iastate.edu/">Iowa Environmental Mesonet</a> against
           <a href="https://github.com/topojson/us-atlas">mbostock's TopoJSON topology</a> of
           <a href="https://www.census.gov/geo/maps-data/data/tiger-cart-boundary.html">US Census data</a>.
+          I generally try to update the current year once every few days, and also have data for the past few years: <span style="display: inline-block"><a href="/wwa?year=2018">2018</a>, <a href="/wwa?year=2017">2017</a>, <a href="/wwa?year=2016">2016</a>.</span>
         </p>
         <div class="header">The data</div>
         <p>The NWS issues
@@ -83,6 +82,17 @@
         <p>
           Because there are
           <a href="http://www.hawaiinewsnow.com/story/36926837/a-winter-wonderland-mauna-kea-sees-heavy-snow-and-more-is-on-the-way">winter storms in Hawaii</a>.
+        </p>
+        <div class="question">Why does {SOME_WARNING} last so long?</div>
+        <p>
+          If you think you see a bug, tell me! But <em>please read this first</em>:
+          the data from the NWS is imperfect, and some alerts in the IEM data are
+          not terminated properly.  Take, for example, <a href="https://mesonet.agron.iastate.edu/vtec/#2017-O-NEW-KFFC-TR-A-1011/USCOMP-N0Q-201709092120">this tropical storm watch</a>
+          that for some (but not all) counties hangs around for a couple of
+          weeks in the IEM data while the rest of the original alert is expired.
+          The problem is probably somewhere in NWS data, or possibly in IEM data,
+          but regardless, I probably won't have the time to do point fixes on top
+          of their data in the near future.  I'm sorry!
         </p>
         <div class="question">Why did you make this?</div>
         <p>
